@@ -3,6 +3,10 @@ import { Device } from '../types/tracker';
 import { UserAccount, AuthSession } from '../types/auth';
 import { StorageService, validateIMEI } from '../services/storage';
 import { Language, translations } from '../services/i18n';
+import { MapTracker } from './MapTracker';
+import { ProtrackSidebar } from './ProtrackSidebar';
+import { ProtrackInfoBox } from './ProtrackInfoBox';
+import { ProtrackPlaybackBar } from './ProtrackPlaybackBar';
 import {
   Users,
   Cpu,
@@ -23,6 +27,7 @@ import {
   ChevronRight,
   UserCheck,
   UserPlus,
+  Navigation,
 } from 'lucide-react';
 
 interface DistributorPanelProps {
@@ -35,6 +40,7 @@ interface DistributorPanelProps {
   onLanguageChange: (lang: Language) => void;
   onOpenHardwareGateway: () => void;
   onOpenWordPressGuide: () => void;
+  onToggleEngineCut?: (device: Device) => void;
 }
 
 export const DistributorPanel: React.FC<DistributorPanelProps> = ({
@@ -47,11 +53,15 @@ export const DistributorPanel: React.FC<DistributorPanelProps> = ({
   onLanguageChange,
   onOpenHardwareGateway,
   onOpenWordPressGuide,
+  onToggleEngineCut,
 }) => {
   const t = translations[language];
-  const [activeTab, setActiveTab] = useState<'devices' | 'users' | 'recharge'>('devices');
+  const [activeTab, setActiveTab] = useState<'monitor' | 'devices' | 'users'>('monitor');
   const [users, setUsers] = useState<UserAccount[]>(StorageService.getUsers());
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(devices[0] || null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activePlaybackDevice, setActivePlaybackDevice] = useState<Device | null>(null);
 
   // Add device form
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false);
@@ -226,6 +236,16 @@ export const DistributorPanel: React.FC<DistributorPanelProps> = ({
         {/* Tab Switcher */}
         <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
           <button
+            onClick={() => setActiveTab('monitor')}
+            className={`py-1.5 px-3 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'monitor' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Navigation className="w-3.5 h-3.5 -rotate-45" />
+            <span>{t.tabMonitor}</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('devices')}
             className={`py-1.5 px-3 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'devices' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
@@ -288,7 +308,51 @@ export const DistributorPanel: React.FC<DistributorPanelProps> = ({
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-5 overflow-y-auto space-y-4 max-w-7xl mx-auto w-full">
+      <main className={`flex-1 overflow-hidden ${activeTab === 'monitor' ? 'p-0 flex' : 'p-5 overflow-y-auto max-w-7xl mx-auto w-full'}`}>
+        {/* Live Map Monitor Tab */}
+        {activeTab === 'monitor' && (
+          <div className="flex-1 flex overflow-hidden relative h-full w-full">
+            <ProtrackSidebar
+              devices={devices}
+              selectedDevice={selectedDevice}
+              onSelectDevice={(dev) => setSelectedDevice(dev)}
+              onOpenRegisterModal={() => setShowAddDeviceModal(true)}
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            />
+            <div className="flex-1 h-full relative">
+              <MapTracker
+                devices={devices}
+                selectedDevice={selectedDevice}
+                onSelectDevice={(dev) => setSelectedDevice(dev)}
+                geofences={[]}
+                showGeofences={true}
+                showTrails={true}
+              />
+
+              {/* Floating Protrack Info Box */}
+              {selectedDevice && !activePlaybackDevice && (
+                <ProtrackInfoBox
+                  device={selectedDevice}
+                  onClose={() => setSelectedDevice(null)}
+                  onOpenPlayback={(dev) => setActivePlaybackDevice(dev)}
+                  onToggleEngineCut={(dev) => onToggleEngineCut?.(dev)}
+                  onOpenHardwareConfig={onOpenHardwareGateway}
+                  onOpenWordPress={onOpenWordPressGuide}
+                />
+              )}
+
+              {/* Protrack Bottom Playback Bar */}
+              {activePlaybackDevice && (
+                <ProtrackPlaybackBar
+                  device={activePlaybackDevice}
+                  onClose={() => setActivePlaybackDevice(null)}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Device Management Tab */}
         {activeTab === 'devices' && (
           <div className="space-y-4">

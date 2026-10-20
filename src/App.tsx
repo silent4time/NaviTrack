@@ -18,7 +18,12 @@ import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export default function App() {
   const [language, setLanguage] = useState<Language>('fa');
-  const [session, setSession] = useState<AuthSession | null>(() => StorageService.getCurrentSession());
+  const [session, setSession] = useState<AuthSession | null>(() => {
+    const existing = StorageService.getCurrentSession();
+    if (existing) return existing;
+    const defaultAuth = StorageService.authenticateByAccount('dealer', '123456');
+    return defaultAuth.session || null;
+  });
   const [impersonatedUser, setImpersonatedUser] = useState<UserAccount | null>(null);
 
   const [devices, setDevices] = useState<Device[]>([]);
@@ -190,6 +195,7 @@ export default function App() {
           onLanguageChange={setLanguage}
           onOpenHardwareGateway={() => setIsHardwareOpen(true)}
           onOpenWordPressGuide={() => setIsWordPressOpen(true)}
+          onToggleEngineCut={handleToggleEngineCut}
         />
       ) : (
         /* End-User / Client Panel (Only their own assigned devices!) */

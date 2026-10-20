@@ -50,7 +50,7 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
   const polylinesRef = useRef<Record<string, L.Polyline>>({});
   const geofenceCirclesRef = useRef<L.Circle[]>([]);
 
-  const [activeTile, setActiveTile] = useState<MapTileProvider>('dark');
+  const [activeTile, setActiveTile] = useState<MapTileProvider>('osm');
   const [showLayerMenu, setShowLayerMenu] = useState(false);
 
   // Initialize Map
@@ -69,13 +69,30 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
     const layerConfig = TILE_LAYERS[activeTile];
     const tileLayer = L.tileLayer(layerConfig.url, {
       attribution: layerConfig.attribution,
+      subdomains: ['a', 'b', 'c'],
       maxZoom: 19,
     }).addTo(map);
 
     tileLayerRef.current = tileLayer;
     mapInstanceRef.current = map;
 
+    // Multiple invalidateSize calls to guarantee tile calculation in all flex views
+    setTimeout(() => {
+      if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+    }, 100);
+    setTimeout(() => {
+      if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+    }, 500);
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+    });
+    if (mapContainerRef.current) {
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
     return () => {
+      resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -91,6 +108,7 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
     const layerConfig = TILE_LAYERS[activeTile];
     const newLayer = L.tileLayer(layerConfig.url, {
       attribution: layerConfig.attribution,
+      subdomains: ['a', 'b', 'c'],
       maxZoom: 19,
     }).addTo(map);
     tileLayerRef.current = newLayer;

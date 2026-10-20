@@ -238,10 +238,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
           {/* Quick Demo Login Triggers for Instant Testing */}
           <div className="pt-3 border-t border-slate-800 space-y-2">
-            <span className="block text-[11px] text-slate-500 text-center font-medium">
-              تست و بررسی سریع بدون نیاز به تایپ:
+            <span className="block text-[11px] text-slate-400 text-center font-medium">
+              دسترسی سریع و مشاهده آنی نقشه:
             </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <button
+              type="button"
+              onClick={handleQuickDemoDistributor}
+              className="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+            >
+              <Navigation className="w-4 h-4 -rotate-45" />
+              <span>مشاهده مستقیم نقشه زنده مانیتورینگ (دمو کامل)</span>
+            </button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
               <button
                 type="button"
                 onClick={handleQuickDemoClient}
