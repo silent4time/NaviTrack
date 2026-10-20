@@ -1,4 +1,5 @@
 import { Device, LicensePackage, LicenseInfo, Geofence, AlertNotification } from '../types/tracker';
+import { UserAccount, AuthSession, UserRole } from '../types/auth';
 
 const STORAGE_KEYS = {
   DEVICES: 'navitrack_devices_v2',
@@ -6,6 +7,9 @@ const STORAGE_KEYS = {
   GEOFENCES: 'navitrack_geofences_v2',
   ALERTS: 'navitrack_alerts_v2',
   MAP_LAYER: 'navitrack_map_layer_v2',
+  USERS: 'navitrack_users_v2',
+  SESSION: 'navitrack_session_v2',
+  LANGUAGE: 'navitrack_language_v2',
 };
 
 // Available License packages for purchase
@@ -650,10 +654,165 @@ export const StorageService = {
     this.saveAlerts(alerts);
   },
 
+  // --- User & Account Management ---
+  getUsers(): UserAccount[] {
+    const raw = localStorage.getItem(STORAGE_KEYS.USERS);
+    if (!raw) {
+      const initialUsers: UserAccount[] = [
+        {
+          id: 'dist_1',
+          username: 'dealer',
+          email: 'dealer@demo.com',
+          name: 'شرکت بازرگانی ردیاب پارس (نماینده رسمی)',
+          role: 'distributor',
+          phone: '09121111111',
+          companyName: 'بازرگانی ردیاب پارس',
+          assignedImeis: ['862908041539201', '358249091823704', '867493038491206', '861937049827365'],
+          createdAt: new Date(Date.now() - 180 * 86400000).toISOString(),
+        },
+        {
+          id: 'user_1',
+          username: 'user',
+          email: 'user@demo.com',
+          name: 'محمدرضا اسدی (مشتری)',
+          role: 'user',
+          phone: '09123456789',
+          assignedImeis: ['862908041539201', '867493038491206'], // Peugeot 207 & Honda Click
+          createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+        },
+        {
+          id: 'user_2',
+          username: 'fleet',
+          email: 'fleet@demo.com',
+          name: 'باربری پیشگامان البرز (مشتری سازمانی)',
+          role: 'user',
+          phone: '09359876543',
+          companyName: 'پیشگامان البرز',
+          assignedImeis: ['358249091823704'], // Isuzu Truck
+          createdAt: new Date(Date.now() - 90 * 86400000).toISOString(),
+        },
+      ];
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(initialUsers));
+      return initialUsers;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  },
+
+  saveUsers(users: UserAccount[]): void {
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  },
+
+  addUser(user: UserAccount): void {
+    const users = this.getUsers();
+    users.unshift(user);
+    this.saveUsers(users);
+  },
+
+  assignDeviceToUser(imei: string, userId: string): void {
+    const users = this.getUsers();
+    users.forEach((u) => {
+      // Remove from others if present
+      u.assignedImeis = u.assignedImeis.filter((i) => i !== imei);
+      if (u.id === userId) {
+        u.assignedImeis.push(imei);
+      }
+    });
+    this.saveUsers(users);
+  },
+
+  // Auth session
+  getCurrentSession(): AuthSession | null {
+    const raw = localStorage.getItem(STORAGE_KEYS.SESSION);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  },
+
+  setCurrentSession(session: AuthSession | null): void {
+    if (!session) {
+      localStorage.removeItem(STORAGE_KEYS.SESSION);
+    } else {
+      localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(session));
+    }
+  },
+
+  authenticateByAccount(username: string, passwordInput: string): { success: boolean; session?: AuthSession; message?: string } {
+    const cleanUser = username.trim().toLowerCase();
+    const cleanPass = passwordInput.trim();
+
+    // Default password for demo is 123456 or admin123
+    if (cleanPass !== '123456' && cleanPass !== 'admin123' && cleanPass !== '1234') {
+      return { success: false, message: 'رمز عبور وارد شده نادرست است (رمز پیش‌فرض تست: 123456).' };
+    }
+
+    const users = this.getUsers();
+    const found = users.find(
+      (u) => u.username.toLowerCase() === cleanUser || u.email.toLowerCase() === cleanUser
+    );
+
+    if (!found) {
+      return { success: false, message: 'کاربری با این نام کاربری یا ایمیل یافت نشد.' };
+    }
+
+    const session: AuthSession = {
+      user: found,
+      loginMethod: 'account',
+      token: `token_${Date.now()}`,
+    };
+    this.setCurrentSession(session);
+    return { success: true, session };
+  },
+
+  authenticateByImei(imeiInput: string, passwordInput = '123456'): { success: boolean; session?: AuthSession; message?: string } {
+    const cleanImei = imeiInput.trim();
+    const devices = this.getDevices();
+    const device = devices.find((d) => d.imei === cleanImei);
+
+    if (!device) {
+      return { success: false, message: `دستگاهی با شناسه IMEI [${cleanImei}] در سامانه ثبت نشده است.` };
+    }
+
+    // Find if assigned to any user, or create a virtual single-device user
+    const users = this.getUsers();
+    let assignedUser = users.find((u) => u.assignedImeis.includes(cleanImei));
+
+    if (!assignedUser) {
+      // create temporary single-device user account
+      assignedUser = {
+        id: `user_imei_${cleanImei}`,
+        username: cleanImei,
+        email: `${cleanImei}@tracker.local`,
+        name: device.name || `مالک ${cleanImei}`,
+        role: 'user',
+        phone: device.simNumber || '09000000000',
+        assignedImeis: [cleanImei],
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    const session: AuthSession = {
+      user: assignedUser,
+      loginMethod: 'imei',
+      loginImei: cleanImei,
+      token: `token_imei_${Date.now()}`,
+    };
+    this.setCurrentSession(session);
+    return { success: true, session };
+  },
+
   resetDemoData(): void {
     localStorage.setItem(STORAGE_KEYS.DEVICES, JSON.stringify(INITIAL_DEVICES));
     localStorage.setItem(STORAGE_KEYS.LICENSES, JSON.stringify(INITIAL_LICENSES));
     localStorage.setItem(STORAGE_KEYS.GEOFENCES, JSON.stringify(INITIAL_GEOFENCES));
     localStorage.setItem(STORAGE_KEYS.ALERTS, JSON.stringify(INITIAL_ALERTS));
+    localStorage.removeItem(STORAGE_KEYS.USERS);
+    this.getUsers(); // reseed users
   },
 };

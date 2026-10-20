@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Enforce Vazirmatn font everywhere */
+body, button, input, select, textarea, div, span, p, h1, h2, h3, h4, h5, h6, table, th, td, a {
+  font-family: 'Vazirmatn', sans-serif !important;
+}
+
+.font-mono, [dir="ltr"].font-mono, code, pre {
+  font-family: 'JetBrains Mono', 'Vazirmatn', monospace !important;
+}
+
 /* Leaflet Dark & Clean Overrides */
 .leaflet-container {
   background-color: #020617 !important;

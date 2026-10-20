@@ -5,70 +5,47 @@
 
 import React, { useState, useEffect } from 'react';
 import { Device, AlertNotification, Geofence } from './types/tracker';
+import { AuthSession, UserAccount } from './types/auth';
+import { Language } from './services/i18n';
 import { StorageService } from './services/storage';
 import { stepSimulation } from './services/simulator';
-import { MapTracker } from './components/MapTracker';
-import { ProtrackSidebar } from './components/ProtrackSidebar';
-import { ProtrackInfoBox } from './components/ProtrackInfoBox';
-import { ProtrackPlaybackBar } from './components/ProtrackPlaybackBar';
-import { Navbar } from './components/Navbar';
-import { RegisterDeviceModal } from './components/RegisterDeviceModal';
-import { LicenseStoreModal } from './components/LicenseStoreModal';
-import { ActivateLicenseModal } from './components/ActivateLicenseModal';
-import { AdminLicenseGeneratorModal } from './components/AdminLicenseGeneratorModal';
-import { AlertsDrawer } from './components/AlertsDrawer';
+import { LoginPage } from './components/LoginPage';
+import { DistributorPanel } from './components/DistributorPanel';
+import { UserMonitorPanel } from './components/UserMonitorPanel';
 import { HardwareConnectorModal } from './components/HardwareConnectorModal';
 import { WordPressPluginGuideModal } from './components/WordPressPluginGuideModal';
-import { GeofenceManagerModal } from './components/GeofenceManagerModal';
-import { ReportsModal } from './components/ReportsModal';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export default function App() {
+  const [language, setLanguage] = useState<Language>('fa');
+  const [session, setSession] = useState<AuthSession | null>(() => StorageService.getCurrentSession());
+  const [impersonatedUser, setImpersonatedUser] = useState<UserAccount | null>(null);
+
   const [devices, setDevices] = useState<Device[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [alerts, setAlerts] = useState<AlertNotification[]>([]);
   const [isSimulating, setIsSimulating] = useState(true);
 
-  // Protrack-style sidebar collapse state
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  // Active Playback mode (Protrack docked bottom bar)
-  const [activePlaybackDevice, setActivePlaybackDevice] = useState<Device | null>(null);
-
-  // Modals
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [isStoreOpen, setIsStoreOpen] = useState(false);
-  const [isActivateOpen, setIsActivateOpen] = useState(false);
-  const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+  // Modals accessible from distributor or user
   const [isHardwareOpen, setIsHardwareOpen] = useState(false);
   const [isWordPressOpen, setIsWordPressOpen] = useState(false);
-  const [isGeofencesOpen, setIsGeofencesOpen] = useState(false);
-  const [isReportsOpen, setIsReportsOpen] = useState(false);
 
-  // Toast message
+  // Toast
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warning' } | null>(null);
 
   const showToast = (text: string, type: 'success' | 'warning' = 'success') => {
     setToastMessage({ text, type });
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3500);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
   // Load initial data
   useEffect(() => {
-    const loadedDevices = StorageService.getDevices();
-    const loadedGeofences = StorageService.getGeofences();
-    const loadedAlerts = StorageService.getAlerts();
-    setDevices(loadedDevices);
-    setSelectedDevice(loadedDevices[0] || null);
-    setGeofences(loadedGeofences);
-    setAlerts(loadedAlerts);
+    setDevices(StorageService.getDevices());
+    setGeofences(StorageService.getGeofences());
+    setAlerts(StorageService.getAlerts());
   }, []);
 
-  // Real-time GPS Simulation Loop
+  // Simulation Loop
   useEffect(() => {
     if (!isSimulating) return;
 
@@ -89,21 +66,28 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isSimulating]);
 
-  // Keep selected device synced with updated telemetry
-  useEffect(() => {
-    if (!selectedDevice) return;
-    const current = devices.find((d) => d.id === selectedDevice.id);
-    if (current && (current.telemetry.latitude !== selectedDevice.telemetry.latitude || current.engineCutOff !== selectedDevice.engineCutOff)) {
-      setSelectedDevice(current);
-    }
-  }, [devices, selectedDevice]);
+  // Auth Handlers
+  const handleLoginSuccess = (newSession: AuthSession) => {
+    setSession(newSession);
+    setImpersonatedUser(null);
+    showToast(`با موفقیت وارد شدید: ${newSession.user.name}`);
+  };
 
-  // Handlers
-  const handleDeviceRegistered = (newDevice: Device) => {
-    StorageService.addDevice(newDevice);
-    setDevices(StorageService.getDevices());
-    setSelectedDevice(newDevice);
-    showToast(`دستگاه [${newDevice.name}] با موفقیت ثبت شد.`);
+  const handleLogout = () => {
+    StorageService.setCurrentSession(null);
+    setSession(null);
+    setImpersonatedUser(null);
+    showToast('از حساب کاربری خارج شدید.');
+  };
+
+  const handleSwitchToUserMonitor = (targetUser: UserAccount) => {
+    setImpersonatedUser(targetUser);
+    showToast(`در حال مشاهده پنل مانیتورینگ مشتری: ${targetUser.name}`);
+  };
+
+  const handleBackToDistributor = () => {
+    setImpersonatedUser(null);
+    showToast('به پنل مدیریت فروشنده بازگشتید.');
   };
 
   const handleToggleEngineCut = (device: Device) => {
@@ -121,9 +105,6 @@ export default function App() {
 
     StorageService.updateDevice(updatedDevice);
     setDevices(StorageService.getDevices());
-    if (selectedDevice?.id === device.id) {
-      setSelectedDevice(updatedDevice);
-    }
 
     const alert: AlertNotification = {
       id: `alert_${Date.now()}`,
@@ -169,84 +150,70 @@ export default function App() {
       const updated = [...currentDevices];
       updated[idx] = updatedDev;
       StorageService.saveDevices(updated);
-      if (selectedDevice?.id === dev.id) {
-        setSelectedDevice(updatedDev);
-      }
       return updated;
     });
     showToast(`موقعیت سخت‌افزار IMEI [${imei}] با پکت دریافتی به‌روز شد.`);
   };
 
-  const handleMarkAllAlertsRead = () => {
-    StorageService.markAllAlertsAsRead();
-    setAlerts(StorageService.getAlerts());
+  // If Not logged in, render the Protrack Login Page
+  if (!session) {
+    return (
+      <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        language={language}
+        onLanguageChange={setLanguage}
+      />
+    );
+  }
+
+  // Active Effective User
+  const isDistributor = session.user.role === 'distributor';
+  const effectiveUser = impersonatedUser || session.user;
+
+  // Render effective session for user view
+  const effectiveSession: AuthSession = {
+    ...session,
+    user: effectiveUser,
   };
 
-  const unreadAlertsCount = alerts.filter((a) => !a.read).length;
-
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 font-['Vazirmatn',sans-serif] overflow-hidden select-none" dir="rtl">
-      {/* Sleek Minimal Top Bar */}
-      <Navbar
-        devices={devices}
-        onOpenRegisterModal={() => setIsRegisterOpen(true)}
-        onOpenHardwareModal={() => setIsHardwareOpen(true)}
-        onOpenWordPressModal={() => setIsWordPressOpen(true)}
-        onOpenAlertsDrawer={() => setIsAlertsOpen(true)}
-        onOpenReportsModal={() => setIsReportsOpen(true)}
-        onOpenGeofencesModal={() => setIsGeofencesOpen(true)}
-        isSimulating={isSimulating}
-        onToggleSimulation={() => setIsSimulating(!isSimulating)}
-        unreadAlertsCount={unreadAlertsCount}
-        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
-
-      {/* Main Map Workspace with Protrack-style Layout */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Protrack Left Sidebar */}
-        <ProtrackSidebar
+    <div className="font-['Vazirmatn',sans-serif]">
+      {/* If Distributor and not viewing as client -> Distributor Panel */}
+      {isDistributor && !impersonatedUser ? (
+        <DistributorPanel
+          session={session}
           devices={devices}
-          selectedDevice={selectedDevice}
-          onSelectDevice={(dev) => setSelectedDevice(dev)}
-          onOpenRegisterModal={() => setIsRegisterOpen(true)}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onDevicesUpdated={() => setDevices(StorageService.getDevices())}
+          onSwitchToUserMonitor={handleSwitchToUserMonitor}
+          onLogout={handleLogout}
+          language={language}
+          onLanguageChange={setLanguage}
+          onOpenHardwareGateway={() => setIsHardwareOpen(true)}
+          onOpenWordPressGuide={() => setIsWordPressOpen(true)}
         />
+      ) : (
+        /* End-User / Client Panel (Only their own assigned devices!) */
+        <UserMonitorPanel
+          session={effectiveSession}
+          allDevices={devices}
+          onToggleEngineCut={handleToggleEngineCut}
+          onLogout={handleLogout}
+          onBackToDistributor={isDistributor ? handleBackToDistributor : undefined}
+          isDistributorImpersonating={Boolean(isDistributor && impersonatedUser)}
+          language={language}
+          onLanguageChange={setLanguage}
+          isSimulating={isSimulating}
+          onToggleSimulation={() => setIsSimulating(!isSimulating)}
+          alerts={alerts}
+          geofences={geofences}
+          onMarkAllAlertsRead={() => {
+            StorageService.markAllAlertsAsRead();
+            setAlerts(StorageService.getAlerts());
+          }}
+        />
+      )}
 
-        {/* 100% Full Bleed Map */}
-        <div className="flex-1 h-full relative">
-          <MapTracker
-            devices={devices}
-            selectedDevice={selectedDevice}
-            onSelectDevice={(dev) => setSelectedDevice(dev)}
-            geofences={geofences}
-            showGeofences={true}
-            showTrails={true}
-          />
-
-          {/* Floating Protrack Info Box (Clean & Unobtrusive) */}
-          {selectedDevice && !activePlaybackDevice && (
-            <ProtrackInfoBox
-              device={selectedDevice}
-              onClose={() => setSelectedDevice(null)}
-              onOpenPlayback={(dev) => setActivePlaybackDevice(dev)}
-              onToggleEngineCut={handleToggleEngineCut}
-              onOpenHardwareConfig={() => setIsHardwareOpen(true)}
-              onOpenWordPress={() => setIsWordPressOpen(true)}
-            />
-          )}
-
-          {/* Protrack Bottom Playback Bar */}
-          {activePlaybackDevice && (
-            <ProtrackPlaybackBar
-              device={activePlaybackDevice}
-              onClose={() => setActivePlaybackDevice(null)}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Clean Toast Notification */}
+      {/* Floating Toast Notification */}
       {toastMessage && (
         <div className="fixed top-14 left-1/2 -translate-x-1/2 z-[800] bg-slate-900 border border-slate-700 text-white px-3.5 py-2 rounded-xl shadow-2xl flex items-center gap-2 animate-in fade-in zoom-in-95 text-xs">
           {toastMessage.type === 'warning' ? (
@@ -258,47 +225,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Modals */}
-      <RegisterDeviceModal
-        isOpen={isRegisterOpen}
-        onClose={() => setIsRegisterOpen(false)}
-        onDeviceRegistered={handleDeviceRegistered}
-      />
-
-      <LicenseStoreModal
-        isOpen={isStoreOpen}
-        onClose={() => setIsStoreOpen(false)}
-        devices={devices}
-        onLicenseActivated={() => setDevices(StorageService.getDevices())}
-      />
-
-      <ActivateLicenseModal
-        isOpen={isActivateOpen}
-        onClose={() => setIsActivateOpen(false)}
-        devices={devices}
-        onSuccess={() => setDevices(StorageService.getDevices())}
-      />
-
-      <AdminLicenseGeneratorModal
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-        onLicensesUpdated={() => setDevices(StorageService.getDevices())}
-      />
-
-      <AlertsDrawer
-        isOpen={isAlertsOpen}
-        onClose={() => setIsAlertsOpen(false)}
-        alerts={alerts}
-        onMarkAllAsRead={handleMarkAllAlertsRead}
-        onSelectAlertDevice={(devId) => {
-          const dev = devices.find((d) => d.id === devId);
-          if (dev) {
-            setSelectedDevice(dev);
-            setIsAlertsOpen(false);
-          }
-        }}
-      />
-
+      {/* Hardware Connector Modal */}
       <HardwareConnectorModal
         isOpen={isHardwareOpen}
         onClose={() => setIsHardwareOpen(false)}
@@ -306,23 +233,10 @@ export default function App() {
         onHardwarePacketInjected={handleHardwarePacketInjected}
       />
 
+      {/* WordPress WooCommerce Plugin Guide Modal */}
       <WordPressPluginGuideModal
         isOpen={isWordPressOpen}
         onClose={() => setIsWordPressOpen(false)}
-      />
-
-      <GeofenceManagerModal
-        isOpen={isGeofencesOpen}
-        onClose={() => setIsGeofencesOpen(false)}
-        geofences={geofences}
-        devices={devices}
-        onGeofencesUpdated={() => setGeofences(StorageService.getGeofences())}
-      />
-
-      <ReportsModal
-        isOpen={isReportsOpen}
-        onClose={() => setIsReportsOpen(false)}
-        devices={devices}
       />
     </div>
   );
