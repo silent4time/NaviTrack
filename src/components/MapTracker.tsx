@@ -1,7 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import { Device, Geofence, MapTileProvider } from '../types/tracker';
-import { Layers, Maximize2, Compass, Eye, ShieldAlert, Zap } from 'lucide-react';
+import {
+  Layers,
+  Compass,
+  AlertTriangle,
+  RefreshCw,
+  Globe,
+  Satellite,
+  Sun,
+  Moon,
+  Map as MapIcon,
+} from 'lucide-react';
 
 interface MapTrackerProps {
   devices: Device[];
@@ -10,28 +20,93 @@ interface MapTrackerProps {
   geofences: Geofence[];
   showGeofences: boolean;
   showTrails: boolean;
+  isSidebarCollapsed?: boolean;
 }
 
-const TILE_LAYERS: Record<MapTileProvider, { url: string; attribution: string; name: string }> = {
-  osm: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors',
-    name: 'خیابانی (OpenStreetMap)',
+export interface TileConfig {
+  url: string;
+  subdomains: string[];
+  attribution: string;
+  name: string;
+  shortName: string;
+  badge?: string;
+  maxZoom: number;
+}
+
+export const TILE_LAYERS: Record<MapTileProvider, TileConfig> = {
+  google_streets: {
+    url: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=fa',
+    subdomains: ['0', '1', '2', '3'],
+    attribution: '&copy; Google Maps',
+    name: 'گوگل خیابانی (فارسی و پرسرعت در ایران)',
+    shortName: 'گوگل خیابانی',
+    badge: 'پیشنهادی ایران',
+    maxZoom: 20,
   },
-  dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; CARTO &copy; OpenStreetMap',
-    name: 'حالت شب / مانیتورینگ تیره',
+  google_satellite: {
+    url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&hl=fa',
+    subdomains: ['0', '1', '2', '3'],
+    attribution: '&copy; Google Satellite',
+    name: 'ماهواره‌ای ترکیبی گوگل (Google Hybrid)',
+    shortName: 'ماهواره‌ای گوگل',
+    maxZoom: 20,
+  },
+  google_hybrid: {
+    url: 'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    subdomains: ['0', '1', '2', '3'],
+    attribution: '&copy; Google Satellite Pure',
+    name: 'ماهواره‌ای خالص گوگل',
+    shortName: 'ماهواره خالص',
+    maxZoom: 20,
+  },
+  esri_streets: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    subdomains: [],
+    attribution: '&copy; Esri World Street Map',
+    name: 'نقشه شهری سراسری Esri (پایدار در ایران)',
+    shortName: 'شهری Esri',
+    badge: 'بدون قطعی',
+    maxZoom: 19,
   },
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Esri, Maxar, Earthstar Geographics',
-    name: 'ماهواره‌ای هوایی (Satellite)',
+    subdomains: [],
+    attribution: '&copy; Esri World Imagery',
+    name: 'ماهواره‌ای هوایی Esri',
+    shortName: 'ماهواره Esri',
+    maxZoom: 19,
   },
-  streets: {
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  osm_hot: {
+    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    subdomains: ['a', 'b', 'c'],
+    attribution: '&copy; OpenStreetMap France',
+    name: 'اوپن‌استریت‌مپ سرور فرانسه (HOT)',
+    shortName: 'OSM سریع',
+    maxZoom: 19,
+  },
+  voyager: {
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    subdomains: ['a', 'b', 'c', 'd'],
     attribution: '&copy; CARTO &copy; OpenStreetMap',
-    name: 'ناوبری روشن (Carto Light)',
+    name: 'ناوبری روشن و مدرن (Carto Voyager)',
+    shortName: 'کارتو وویجر',
+    maxZoom: 19,
+  },
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    subdomains: ['a', 'b', 'c', 'd'],
+    attribution: '&copy; CARTO &copy; OpenStreetMap',
+    name: 'حالت تیره کنترل‌روم (Dark Mode)',
+    shortName: 'حالت شب',
+    maxZoom: 19,
+  },
+  osm: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    subdomains: ['a', 'b', 'c'],
+    attribution: '&copy; OpenStreetMap contributors',
+    name: 'اوپن‌استریت‌مپ استاندارد (OSM Global)',
+    shortName: 'OSM استاندارد',
+    maxZoom: 19,
   },
 };
 
@@ -42,6 +117,7 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
   geofences,
   showGeofences,
   showTrails,
+  isSidebarCollapsed,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -50,8 +126,16 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
   const polylinesRef = useRef<Record<string, L.Polyline>>({});
   const geofenceCirclesRef = useRef<L.Circle[]>([]);
 
-  const [activeTile, setActiveTile] = useState<MapTileProvider>('osm');
+  const [activeTile, setActiveTile] = useState<MapTileProvider>('google_streets');
   const [showLayerMenu, setShowLayerMenu] = useState(false);
+  const [tileErrorDetected, setTileErrorDetected] = useState(false);
+
+  // Invalidate size helper
+  const triggerMapResize = useCallback(() => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.invalidateSize({ pan: false });
+    }
+  }, []);
 
   // Initialize Map
   useEffect(() => {
@@ -62,57 +146,104 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
       center: [35.735, 51.39],
       zoom: 12,
       zoomControl: false,
+      attributionControl: false,
     });
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     const layerConfig = TILE_LAYERS[activeTile];
-    const tileLayer = L.tileLayer(layerConfig.url, {
+    const tileOptions: L.TileLayerOptions = {
       attribution: layerConfig.attribution,
-      subdomains: ['a', 'b', 'c'],
-      maxZoom: 19,
-    }).addTo(map);
+      maxZoom: layerConfig.maxZoom || 19,
+    };
+    if (layerConfig.subdomains && layerConfig.subdomains.length > 0) {
+      tileOptions.subdomains = layerConfig.subdomains;
+    }
+
+    const tileLayer = L.tileLayer(layerConfig.url, tileOptions).addTo(map);
+
+    let errorCount = 0;
+    tileLayer.on('tileerror', () => {
+      errorCount++;
+      if (errorCount > 3) {
+        setTileErrorDetected(true);
+      }
+    });
+
+    tileLayer.on('tileload', () => {
+      // Tiles loading successfully
+      setTileErrorDetected(false);
+    });
 
     tileLayerRef.current = tileLayer;
     mapInstanceRef.current = map;
 
-    // Multiple invalidateSize calls to guarantee tile calculation in all flex views
-    setTimeout(() => {
-      if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
-    }, 100);
-    setTimeout(() => {
-      if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
-    }, 500);
+    // Multiple invalidateSize calls to guarantee tile calculation
+    setTimeout(triggerMapResize, 100);
+    setTimeout(triggerMapResize, 350);
+    setTimeout(triggerMapResize, 800);
 
     const resizeObserver = new ResizeObserver(() => {
-      if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+      triggerMapResize();
     });
     if (mapContainerRef.current) {
       resizeObserver.observe(mapContainerRef.current);
     }
 
+    window.addEventListener('resize', triggerMapResize);
+
     return () => {
+      window.removeEventListener('resize', triggerMapResize);
       resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
     };
   }, []);
 
-  // Update Tile Layer
+  // Update Tile Layer when user selects a different provider
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
     if (tileLayerRef.current) {
       map.removeLayer(tileLayerRef.current);
     }
+
     const layerConfig = TILE_LAYERS[activeTile];
-    const newLayer = L.tileLayer(layerConfig.url, {
+    const tileOptions: L.TileLayerOptions = {
       attribution: layerConfig.attribution,
-      subdomains: ['a', 'b', 'c'],
-      maxZoom: 19,
-    }).addTo(map);
+      maxZoom: layerConfig.maxZoom || 19,
+    };
+    if (layerConfig.subdomains && layerConfig.subdomains.length > 0) {
+      tileOptions.subdomains = layerConfig.subdomains;
+    }
+
+    const newLayer = L.tileLayer(layerConfig.url, tileOptions).addTo(map);
+
+    let errCount = 0;
+    newLayer.on('tileerror', () => {
+      errCount++;
+      if (errCount > 3) {
+        setTileErrorDetected(true);
+      }
+    });
+
+    newLayer.on('tileload', () => {
+      setTileErrorDetected(false);
+    });
+
     tileLayerRef.current = newLayer;
-  }, [activeTile]);
+    triggerMapResize();
+  }, [activeTile, triggerMapResize]);
+
+  // When sidebar collapses or expands, resize map
+  useEffect(() => {
+    const timer1 = setTimeout(triggerMapResize, 50);
+    const timer2 = setTimeout(triggerMapResize, 320);
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [isSidebarCollapsed, triggerMapResize]);
 
   // Update Markers & Trails
   useEffect(() => {
@@ -139,7 +270,9 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
       } else if (speed === 0) {
         statusColor = '#f59e0b'; // amber stopped
         statusBg = 'bg-amber-500';
-        pingPulse = ignition ? `<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-50"></span>` : '';
+        pingPulse = ignition
+          ? `<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-50"></span>`
+          : '';
       }
 
       // SVG Icon based on asset type
@@ -155,9 +288,13 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
       };
 
       const customHtml = `
-        <div class="relative flex items-center justify-center cursor-pointer group">
+        <div class="relative flex items-center justify-center cursor-pointer group" style="direction: rtl;">
           <!-- Selection ring -->
-          ${isSelected ? `<div class="absolute -inset-2.5 rounded-full border-2 border-cyan-400 animate-pulse bg-cyan-400/20"></div>` : ''}
+          ${
+            isSelected
+              ? `<div class="absolute -inset-2.5 rounded-full border-2 border-cyan-400 animate-pulse bg-cyan-400/20"></div>`
+              : ''
+          }
           
           <!-- Outer pin frame with heading rotation -->
           <div style="transform: rotate(${heading}deg); transition: transform 0.4s ease-out;" class="relative w-11 h-11 rounded-2xl ${statusBg} text-white shadow-xl flex items-center justify-center border-2 border-slate-900 shadow-slate-950/80">
@@ -171,8 +308,14 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
           </div>
 
           <!-- Speed Badge -->
-          <div class="absolute -bottom-2 bg-slate-900/95 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-slate-700/80 shadow-md whitespace-nowrap dir-rtl">
-            ${speed > 0 ? `${speed} <span class="text-[8px] font-normal text-slate-400">km/h</span>` : isEngineCut ? 'رله خاموش' : 'توقف'}
+          <div class="absolute -bottom-2 bg-slate-900/95 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-slate-700/80 shadow-md whitespace-nowrap">
+            ${
+              speed > 0
+                ? `${speed} <span class="text-[8px] font-normal text-slate-400">km/h</span>`
+                : isEngineCut
+                ? 'رله خاموش'
+                : 'توقف'
+            }
           </div>
 
           <!-- Floating Name Label on Hover or Selected -->
@@ -277,33 +420,73 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
 
   const fitAllDevices = () => {
     if (!mapInstanceRef.current || devices.length === 0) return;
-    const latLngs = devices.map((d) => [d.telemetry.latitude, d.telemetry.longitude] as [number, number]);
+    const latLngs = devices.map(
+      (d) => [d.telemetry.latitude, d.telemetry.longitude] as [number, number]
+    );
     const bounds = L.latLngBounds(latLngs);
     mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
   };
 
+  // Quick select pills on top
+  const quickPillKeys: MapTileProvider[] = [
+    'google_streets',
+    'google_satellite',
+    'esri_streets',
+    'osm_hot',
+    'dark',
+  ];
+
   return (
-    <div className="relative w-full h-full flex-1 overflow-hidden select-none">
+    <div className="relative w-full h-full flex-1 overflow-hidden select-none bg-slate-950">
       {/* Map Container */}
       <div ref={mapContainerRef} className="w-full h-full z-0 bg-slate-950" />
 
-      {/* Floating Map Controls - Top Right (Protrack style) */}
-      <div className="absolute top-3 right-3 z-[400] flex flex-col gap-1.5">
-        {/* Layer Selector */}
+      {/* Floating Map Controls - Top Center / Left: Quick Tile Switchers */}
+      <div className="absolute top-3 left-4 z-[400] flex items-center gap-1.5 flex-wrap bg-slate-950/85 backdrop-blur-md p-1 rounded-2xl border border-slate-700/80 shadow-2xl">
+        <div className="flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-slate-300">
+          <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+          <span className="hidden sm:inline">نقشه:</span>
+        </div>
+
+        {quickPillKeys.map((key) => {
+          const config = TILE_LAYERS[key];
+          const isActive = activeTile === key;
+          return (
+            <button
+              key={key}
+              onClick={() => {
+                setActiveTile(key);
+                setTileErrorDetected(false);
+              }}
+              title={config.name}
+              className={`px-2.5 py-1 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1 ${
+                isActive
+                  ? 'bg-cyan-500 text-white shadow-md font-bold'
+                  : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+              }`}
+            >
+              <span>{config.shortName}</span>
+              {config.badge && !isActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              )}
+            </button>
+          );
+        })}
+
+        {/* More layers dropdown toggle */}
         <div className="relative">
           <button
             onClick={() => setShowLayerMenu(!showLayerMenu)}
-            title="تغییر لایه نقشه"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl shadow-lg backdrop-blur-md transition-all text-[11px] font-medium cursor-pointer"
+            title="همه لایه‌های نقشه"
+            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
           >
-            <Layers className="w-3.5 h-3.5 text-cyan-400" />
-            <span>{TILE_LAYERS[activeTile].name.split(' ')[0]}</span>
+            <Layers className="w-3.5 h-3.5" />
           </button>
 
           {showLayerMenu && (
-            <div className="absolute top-10 right-0 w-52 bg-slate-900/95 border border-slate-700/80 rounded-2xl p-1.5 shadow-2xl backdrop-blur-lg flex flex-col gap-1 z-50 animate-in fade-in zoom-in-95">
+            <div className="absolute top-9 left-0 w-60 bg-slate-900 border border-slate-700 rounded-2xl p-1.5 shadow-2xl backdrop-blur-lg flex flex-col gap-1 z-50">
               <div className="text-[10px] text-slate-400 font-semibold px-2 py-1 border-b border-slate-800 mb-0.5">
-                انتخاب لایه نقشه
+                تمام ارائه‌دهندگان نقشه (سازگار با ایران)
               </div>
               {(Object.keys(TILE_LAYERS) as MapTileProvider[]).map((key) => {
                 const layer = TILE_LAYERS[key];
@@ -314,8 +497,9 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
                     onClick={() => {
                       setActiveTile(key);
                       setShowLayerMenu(false);
+                      setTileErrorDetected(false);
                     }}
-                    className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] text-right transition-colors cursor-pointer ${
+                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[11px] text-right transition-colors cursor-pointer ${
                       isActive
                         ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
                         : 'text-slate-300 hover:bg-slate-800/80'
@@ -329,16 +513,50 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
             </div>
           )}
         </div>
+      </div>
 
-        {/* Fit bounds button */}
+      {/* Floating Compass / Fit Bounds - Top Right */}
+      <div className="absolute top-3 right-4 z-[400] flex items-center gap-1.5">
         <button
           onClick={fitAllDevices}
           title="مشاهده تمام خودروها روی نقشه"
-          className="flex items-center justify-center p-2 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl shadow-lg backdrop-blur-md transition-all cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950/85 hover:bg-slate-900 text-slate-200 border border-slate-700/80 rounded-2xl shadow-xl backdrop-blur-md transition-all cursor-pointer text-xs font-bold"
         >
           <Compass className="w-4 h-4 text-amber-400" />
+          <span className="hidden sm:inline">تمرکز روی همه</span>
         </button>
       </div>
+
+      {/* Tile Error Fallback Notice (if user ISP blocks a specific CDN) */}
+      {tileErrorDetected && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[450] bg-slate-900/95 border border-amber-500/80 text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-3 text-xs backdrop-blur-md max-w-lg w-[90%] sm:w-auto">
+          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+          <div className="text-[11px]">
+            <div className="font-bold text-amber-300">عدم پاسخ سرور نقشه انتخابی در اینترنت شما</div>
+            <div className="text-slate-300 text-[10px]">
+              پیشنهاد: نقشه را به گوگل خیابانی یا Esri تغییر دهید.
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setActiveTile('google_streets');
+              setTileErrorDetected(false);
+            }}
+            className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-[10px] cursor-pointer shrink-0"
+          >
+            تغییر به گوگل خیابانی
+          </button>
+          <button
+            onClick={() => {
+              setActiveTile('esri_streets');
+              setTileErrorDetected(false);
+            }}
+            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-[10px] cursor-pointer shrink-0"
+          >
+            تغییر به Esri
+          </button>
+        </div>
+      )}
     </div>
   );
 };

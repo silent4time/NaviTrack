@@ -28,6 +28,8 @@ import {
   UserCheck,
   UserPlus,
   Navigation,
+  PanelRightOpen,
+  PanelRightClose,
 } from 'lucide-react';
 
 interface DistributorPanelProps {
@@ -268,6 +270,26 @@ export const DistributorPanel: React.FC<DistributorPanelProps> = ({
 
         {/* Actions / User Switcher / Logout */}
         <div className="flex items-center gap-2 text-xs">
+          {/* Sidebar Toggle when on Monitor tab */}
+          {activeTab === 'monitor' && (
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              title={isSidebarCollapsed ? 'نمایش مجدد فهرست خودروها (باکس راست)' : 'مخفی‌سازی فهرست خودروها'}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                isSidebarCollapsed
+                  ? 'bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border-cyan-400 text-cyan-200 shadow-md animate-pulse'
+                  : 'bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white'
+              }`}
+            >
+              {isSidebarCollapsed ? (
+                <PanelRightOpen className="w-3.5 h-3.5 text-cyan-300" />
+              ) : (
+                <PanelRightClose className="w-3.5 h-3.5" />
+              )}
+              <span>{isSidebarCollapsed ? 'نمایش منوی راست' : 'مخفی‌سازی منو'}</span>
+            </button>
+          )}
+
           {/* Quick Monitor Switch */}
           {users.find((u) => u.role === 'user') && (
             <button
@@ -319,6 +341,7 @@ export const DistributorPanel: React.FC<DistributorPanelProps> = ({
               onOpenRegisterModal={() => setShowAddDeviceModal(true)}
               isCollapsed={isSidebarCollapsed}
               onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              dir={language === 'fa' ? 'rtl' : 'ltr'}
             />
             <div className="flex-1 h-full relative">
               <MapTracker
@@ -328,6 +351,7 @@ export const DistributorPanel: React.FC<DistributorPanelProps> = ({
                 geofences={[]}
                 showGeofences={true}
                 showTrails={true}
+                isSidebarCollapsed={isSidebarCollapsed}
               />
 
               {/* Floating Protrack Info Box */}

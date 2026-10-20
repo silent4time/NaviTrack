@@ -88,4 +88,13 @@ export interface AlertNotification {
   severity: 'low' | 'medium' | 'high';
 }
 
-export type MapTileProvider = 'osm' | 'satellite' | 'dark' | 'streets';
+export type MapTileProvider =
+  | 'google_streets'
+  | 'google_satellite'
+  | 'google_hybrid'
+  | 'osm_hot'
+  | 'esri_streets'
+  | 'satellite'
+  | 'voyager'
+  | 'dark'
+  | 'osm';

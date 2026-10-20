@@ -19,6 +19,9 @@ import {
   Shield,
   Smartphone,
   Eye,
+  PanelRightOpen,
+  PanelRightClose,
+  Car,
 } from 'lucide-react';
 
 interface UserMonitorPanelProps {
@@ -108,6 +111,24 @@ export const UserMonitorPanel: React.FC<UserMonitorPanelProps> = ({
 
         {/* Right Tools */}
         <div className="flex items-center gap-2 text-xs">
+          {/* Explicit Sidebar Toggle Button */}
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            title={isSidebarCollapsed ? 'نمایش مجدد فهرست خودروها (باکس راست)' : 'مخفی‌سازی فهرست خودروها'}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold cursor-pointer transition-all ${
+              isSidebarCollapsed
+                ? 'bg-gradient-to-r from-cyan-600/30 to-blue-600/30 border-cyan-400 text-cyan-200 shadow-md animate-pulse'
+                : 'bg-slate-800 border-slate-700/80 text-slate-300 hover:text-white'
+            }`}
+          >
+            {isSidebarCollapsed ? (
+              <PanelRightOpen className="w-3.5 h-3.5 text-cyan-300" />
+            ) : (
+              <PanelRightClose className="w-3.5 h-3.5" />
+            )}
+            <span>{isSidebarCollapsed ? 'نمایش منوی راست (خودروها)' : 'مخفی‌سازی منو'}</span>
+          </button>
+
           {/* Live GPS Simulation toggle */}
           <button
             onClick={onToggleSimulation}
@@ -157,7 +178,7 @@ export const UserMonitorPanel: React.FC<UserMonitorPanelProps> = ({
 
       {/* Main Map + Sidebar */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Protrack Left Sidebar (Only user devices!) */}
+        {/* Protrack Left/Right Sidebar (Only user devices!) */}
         <ProtrackSidebar
           devices={userDevices}
           selectedDevice={selectedDevice}
@@ -165,6 +186,7 @@ export const UserMonitorPanel: React.FC<UserMonitorPanelProps> = ({
           onOpenRegisterModal={() => {}}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          dir={language === 'fa' ? 'rtl' : 'ltr'}
         />
 
         {/* Full-bleed Map */}
@@ -176,6 +198,7 @@ export const UserMonitorPanel: React.FC<UserMonitorPanelProps> = ({
             geofences={geofences}
             showGeofences={true}
             showTrails={true}
+            isSidebarCollapsed={isSidebarCollapsed}
           />
 
           {/* Floating Protrack Info Box */}
