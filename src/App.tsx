@@ -182,7 +182,7 @@ export default function App() {
   };
 
   return (
-    <div className="font-['Vazirmatn',sans-serif]">
+    <div className="h-screen w-screen flex flex-col overflow-hidden font-['Vazirmatn',sans-serif]">
       {/* If Distributor and not viewing as client -> Distributor Panel */}
       {isDistributor && !impersonatedUser ? (
         <DistributorPanel

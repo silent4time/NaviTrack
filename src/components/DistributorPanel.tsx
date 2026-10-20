@@ -211,7 +211,7 @@ export const DistributorPanel: React.FC<DistributorPanelProps> = ({
 
   return (
     <div
-      className="min-h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-['Vazirmatn',sans-serif] select-none"
+      className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col font-['Vazirmatn',sans-serif] select-none overflow-hidden"
       dir={language === 'fa' ? 'rtl' : 'ltr'}
     >
       {/* Top Header of Distributor Protrack Business Management */}

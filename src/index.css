@@ -9,10 +9,38 @@ body, button, input, select, textarea, div, span, p, h1, h2, h3, h4, h5, h6, tab
   font-family: 'JetBrains Mono', 'Vazirmatn', monospace !important;
 }
 
-/* Leaflet Dark & Clean Overrides */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Critical Leaflet Direction & Tile Fixes:
+   Leaflet strictly requires direction: ltr. Under RTL, coordinates flip and tiles
+   are rendered offscreen, making the map completely invisible! */
 .leaflet-container {
+  direction: ltr !important;
+  text-align: left !important;
+  width: 100% !important;
+  height: 100% !important;
   background-color: #020617 !important;
   font-family: 'Vazirmatn', sans-serif !important;
+  z-index: 10;
+}
+
+.leaflet-pane,
+.leaflet-tile-pane,
+.leaflet-map-pane,
+.leaflet-layer {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+.leaflet-tile {
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .custom-vehicle-marker {
