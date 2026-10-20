@@ -1,0 +1,6 @@
+{
+  "name": "سامانه ردیابی آنلاین ناویار (NaviTrack)",
+  "description": "نرم‌افزار جامع ردیابی آنلاین وسایل نقلیه و اشخاص با ثبت دستگاه از طریق IMEI، مدیریت و فروش کدهای لایسنس و نقشه زنده پیشرفته.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

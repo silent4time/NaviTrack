@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/* Leaflet Dark & Clean Overrides */
+.leaflet-container {
+  background-color: #020617 !important;
+  font-family: 'Vazirmatn', sans-serif !important;
+}
+
+.custom-vehicle-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-bar {
+  border: 1px solid rgba(51, 65, 85, 0.8) !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-bar a {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  color: #e2e8f0 !important;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.6) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #1e293b !important;
+  color: #38bdf8 !important;
+}
+
+.leaflet-control-attribution {
+  background-color: rgba(15, 23, 42, 0.75) !important;
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+  border-radius: 6px !important;
+  margin: 6px !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.leaflet-control-attribution a {
+  color: #38bdf8 !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
