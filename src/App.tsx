@@ -3,25 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Device, AlertNotification, Geofence } from './types/tracker';
 import { StorageService } from './services/storage';
 import { stepSimulation } from './services/simulator';
 import { MapTracker } from './components/MapTracker';
-import { DeviceListSidebar } from './components/DeviceListSidebar';
+import { ProtrackSidebar } from './components/ProtrackSidebar';
+import { ProtrackInfoBox } from './components/ProtrackInfoBox';
+import { ProtrackPlaybackBar } from './components/ProtrackPlaybackBar';
 import { Navbar } from './components/Navbar';
 import { RegisterDeviceModal } from './components/RegisterDeviceModal';
 import { LicenseStoreModal } from './components/LicenseStoreModal';
 import { ActivateLicenseModal } from './components/ActivateLicenseModal';
 import { AdminLicenseGeneratorModal } from './components/AdminLicenseGeneratorModal';
-import { HistoryPlaybackModal } from './components/HistoryPlaybackModal';
 import { AlertsDrawer } from './components/AlertsDrawer';
-import { TelemetryDrawer } from './components/TelemetryDrawer';
 import { HardwareConnectorModal } from './components/HardwareConnectorModal';
 import { WordPressPluginGuideModal } from './components/WordPressPluginGuideModal';
 import { GeofenceManagerModal } from './components/GeofenceManagerModal';
 import { ReportsModal } from './components/ReportsModal';
-import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export default function App() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -30,9 +30,11 @@ export default function App() {
   const [alerts, setAlerts] = useState<AlertNotification[]>([]);
   const [isSimulating, setIsSimulating] = useState(true);
 
-  // Map display toggles
-  const [showTrails, setShowTrails] = useState(true);
-  const [showGeofences, setShowGeofences] = useState(true);
+  // Protrack-style sidebar collapse state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Active Playback mode (Protrack docked bottom bar)
+  const [activePlaybackDevice, setActivePlaybackDevice] = useState<Device | null>(null);
 
   // Modals
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
@@ -40,16 +42,10 @@ export default function App() {
   const [isActivateOpen, setIsActivateOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
-  const [isPlaybackOpen, setIsPlaybackOpen] = useState(false);
   const [isHardwareOpen, setIsHardwareOpen] = useState(false);
   const [isWordPressOpen, setIsWordPressOpen] = useState(false);
   const [isGeofencesOpen, setIsGeofencesOpen] = useState(false);
   const [isReportsOpen, setIsReportsOpen] = useState(false);
-  const [playbackDevice, setPlaybackDevice] = useState<Device | null>(null);
-  const [activatePreselectedDevice, setActivatePreselectedDevice] = useState<Device | null>(null);
-
-  // Mobile sidebar drawer
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Toast message
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warning' } | null>(null);
@@ -58,7 +54,7 @@ export default function App() {
     setToastMessage({ text, type });
     setTimeout(() => {
       setToastMessage(null);
-    }, 4000);
+    }, 3500);
   };
 
   // Load initial data
@@ -107,7 +103,7 @@ export default function App() {
     StorageService.addDevice(newDevice);
     setDevices(StorageService.getDevices());
     setSelectedDevice(newDevice);
-    showToast(`دستگاه [${newDevice.name}] با کد IMEI ${newDevice.imei} با موفقیت ثبت شد.`);
+    showToast(`دستگاه [${newDevice.name}] با موفقیت ثبت شد.`);
   };
 
   const handleToggleEngineCut = (device: Device) => {
@@ -129,7 +125,6 @@ export default function App() {
       setSelectedDevice(updatedDevice);
     }
 
-    // Add alert log
     const alert: AlertNotification = {
       id: `alert_${Date.now()}`,
       deviceId: device.id,
@@ -138,7 +133,7 @@ export default function App() {
       type: 'engine_cut',
       message: newCutState
         ? `فرمان قطع کن موتور صادر شد - سوخت‌رسانی متوقف است.`
-        : `فرمان وصل مجدد سوخت صادر شد - استارت و حرکت مجاز است.`,
+        : `فرمان وصل مجدد سوخت صادر شد - استارت مجاز است.`,
       timestamp: new Date().toISOString(),
       read: false,
       severity: newCutState ? 'high' : 'low',
@@ -149,44 +144,9 @@ export default function App() {
     showToast(
       newCutState
         ? `رله خاموش‌کن برای ${device.name} فعال شد (موتور متوقف گردید).`
-        : `رله سوخت ${device.name} وصل شد (آماده استارت).`,
+        : `رله سوخت ${device.name} وصل شد.`,
       newCutState ? 'warning' : 'success'
     );
-  };
-
-  const handleOpenActivateLicense = (device?: Device) => {
-    setActivatePreselectedDevice(device || null);
-    setIsActivateOpen(true);
-  };
-
-  const handleOpenPlayback = (device: Device) => {
-    setPlaybackDevice(device);
-    setIsPlaybackOpen(true);
-  };
-
-  const handleRefreshAfterLicenseChange = () => {
-    const refreshed = StorageService.getDevices();
-    setDevices(refreshed);
-    if (selectedDevice) {
-      const updated = refreshed.find((d) => d.id === selectedDevice.id);
-      if (updated) setSelectedDevice(updated);
-    }
-    showToast('وضعیت لایسنس دستگاه با موفقیت به‌روزرسانی شد.');
-  };
-
-  const handleResetDemo = () => {
-    StorageService.resetDemoData();
-    const refreshed = StorageService.getDevices();
-    setDevices(refreshed);
-    setSelectedDevice(refreshed[0] || null);
-    setGeofences(StorageService.getGeofences());
-    setAlerts(StorageService.getAlerts());
-    showToast('داده‌های دموی ردیاب‌ها و مسیرها بازنشانی گردید.');
-  };
-
-  const handleMarkAllAlertsRead = () => {
-    StorageService.markAllAlertsAsRead();
-    setAlerts(StorageService.getAlerts());
   };
 
   const handleHardwarePacketInjected = (imei: string, lat: number, lng: number, speed: number) => {
@@ -217,123 +177,84 @@ export default function App() {
     showToast(`موقعیت سخت‌افزار IMEI [${imei}] با پکت دریافتی به‌روز شد.`);
   };
 
+  const handleMarkAllAlertsRead = () => {
+    StorageService.markAllAlertsAsRead();
+    setAlerts(StorageService.getAlerts());
+  };
+
   const unreadAlertsCount = alerts.filter((a) => !a.read).length;
 
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 font-['Vazirmatn',sans-serif] overflow-hidden select-none" dir="rtl">
-      {/* Top Navbar */}
+      {/* Sleek Minimal Top Bar */}
       <Navbar
+        devices={devices}
         onOpenRegisterModal={() => setIsRegisterOpen(true)}
-        onOpenStoreModal={() => setIsStoreOpen(true)}
-        onOpenActivateLicenseModal={() => handleOpenActivateLicense()}
-        onOpenAdminModal={() => setIsAdminOpen(true)}
-        onOpenAlertsDrawer={() => setIsAlertsOpen(true)}
         onOpenHardwareModal={() => setIsHardwareOpen(true)}
         onOpenWordPressModal={() => setIsWordPressOpen(true)}
-        onOpenGeofencesModal={() => setIsGeofencesOpen(true)}
+        onOpenAlertsDrawer={() => setIsAlertsOpen(true)}
         onOpenReportsModal={() => setIsReportsOpen(true)}
+        onOpenGeofencesModal={() => setIsGeofencesOpen(true)}
         isSimulating={isSimulating}
         onToggleSimulation={() => setIsSimulating(!isSimulating)}
-        onResetDemo={handleResetDemo}
         unreadAlertsCount={unreadAlertsCount}
-        showTrails={showTrails}
-        onToggleTrails={() => setShowTrails(!showTrails)}
-        showGeofences={showGeofences}
-        onToggleGeofences={() => setShowGeofences(!showGeofences)}
-        onToggleSidebarMobile={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      {/* Main Workspace: Sidebar + Map */}
+      {/* Main Map Workspace with Protrack-style Layout */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Desktop Sidebar */}
-        <div className="hidden md:flex h-full">
-          <DeviceListSidebar
-            devices={devices}
-            selectedDevice={selectedDevice}
-            onSelectDevice={(dev) => setSelectedDevice(dev)}
-            onOpenRegisterModal={() => setIsRegisterOpen(true)}
-            onOpenActivateLicenseModal={handleOpenActivateLicense}
-            onOpenStoreModal={() => setIsStoreOpen(true)}
-            onToggleEngineCut={handleToggleEngineCut}
-            onOpenPlayback={handleOpenPlayback}
-          />
-        </div>
+        {/* Protrack Left Sidebar */}
+        <ProtrackSidebar
+          devices={devices}
+          selectedDevice={selectedDevice}
+          onSelectDevice={(dev) => setSelectedDevice(dev)}
+          onOpenRegisterModal={() => setIsRegisterOpen(true)}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
 
-        {/* Mobile Sidebar Drawer */}
-        {isMobileSidebarOpen && (
-          <div className="fixed inset-0 z-[500] flex bg-slate-950/70 backdrop-blur-sm md:hidden">
-            <div className="w-5/6 max-w-sm h-full bg-slate-900 flex flex-col shadow-2xl animate-in slide-in-from-right">
-              <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-950">
-                <span className="font-bold text-xs text-white">لیست دستگاه‌ها و خودروها</span>
-                <button
-                  onClick={() => setIsMobileSidebarOpen(false)}
-                  className="p-1.5 text-slate-400 hover:text-white"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <DeviceListSidebar
-                  devices={devices}
-                  selectedDevice={selectedDevice}
-                  onSelectDevice={(dev) => {
-                    setSelectedDevice(dev);
-                    setIsMobileSidebarOpen(false);
-                  }}
-                  onOpenRegisterModal={() => {
-                    setIsMobileSidebarOpen(false);
-                    setIsRegisterOpen(true);
-                  }}
-                  onOpenActivateLicenseModal={(dev) => {
-                    setIsMobileSidebarOpen(false);
-                    handleOpenActivateLicense(dev);
-                  }}
-                  onOpenStoreModal={() => {
-                    setIsMobileSidebarOpen(false);
-                    setIsStoreOpen(true);
-                  }}
-                  onToggleEngineCut={handleToggleEngineCut}
-                  onOpenPlayback={(dev) => {
-                    setIsMobileSidebarOpen(false);
-                    handleOpenPlayback(dev);
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Leaflet & OpenStreetMap Live Tracker */}
+        {/* 100% Full Bleed Map */}
         <div className="flex-1 h-full relative">
           <MapTracker
             devices={devices}
             selectedDevice={selectedDevice}
             onSelectDevice={(dev) => setSelectedDevice(dev)}
             geofences={geofences}
-            showGeofences={showGeofences}
-            showTrails={showTrails}
+            showGeofences={true}
+            showTrails={true}
           />
 
-          {/* Floating Live Telemetry HUD for Selected Device */}
-          <TelemetryDrawer
-            device={selectedDevice}
-            onClose={() => setSelectedDevice(null)}
-            onToggleEngineCut={handleToggleEngineCut}
-            onOpenPlayback={handleOpenPlayback}
-            onOpenLicenseRenew={handleOpenActivateLicense}
-          />
+          {/* Floating Protrack Info Box (Clean & Unobtrusive) */}
+          {selectedDevice && !activePlaybackDevice && (
+            <ProtrackInfoBox
+              device={selectedDevice}
+              onClose={() => setSelectedDevice(null)}
+              onOpenPlayback={(dev) => setActivePlaybackDevice(dev)}
+              onToggleEngineCut={handleToggleEngineCut}
+              onOpenHardwareConfig={() => setIsHardwareOpen(true)}
+              onOpenWordPress={() => setIsWordPressOpen(true)}
+            />
+          )}
+
+          {/* Protrack Bottom Playback Bar */}
+          {activePlaybackDevice && (
+            <ProtrackPlaybackBar
+              device={activePlaybackDevice}
+              onClose={() => setActivePlaybackDevice(null)}
+            />
+          )}
         </div>
       </div>
 
-      {/* Toast Notification */}
+      {/* Clean Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[800] bg-slate-900 border border-slate-700 text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2.5 animate-in fade-in zoom-in-95">
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-[800] bg-slate-900 border border-slate-700 text-white px-3.5 py-2 rounded-xl shadow-2xl flex items-center gap-2 animate-in fade-in zoom-in-95 text-xs">
           {toastMessage.type === 'warning' ? (
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
           ) : (
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           )}
-          <span className="text-xs font-medium">{toastMessage.text}</span>
+          <span>{toastMessage.text}</span>
         </div>
       )}
 
@@ -348,27 +269,20 @@ export default function App() {
         isOpen={isStoreOpen}
         onClose={() => setIsStoreOpen(false)}
         devices={devices}
-        onLicenseActivated={handleRefreshAfterLicenseChange}
+        onLicenseActivated={() => setDevices(StorageService.getDevices())}
       />
 
       <ActivateLicenseModal
         isOpen={isActivateOpen}
         onClose={() => setIsActivateOpen(false)}
         devices={devices}
-        preSelectedDevice={activatePreselectedDevice}
-        onSuccess={handleRefreshAfterLicenseChange}
+        onSuccess={() => setDevices(StorageService.getDevices())}
       />
 
       <AdminLicenseGeneratorModal
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
-        onLicensesUpdated={handleRefreshAfterLicenseChange}
-      />
-
-      <HistoryPlaybackModal
-        isOpen={isPlaybackOpen}
-        onClose={() => setIsPlaybackOpen(false)}
-        device={playbackDevice}
+        onLicensesUpdated={() => setDevices(StorageService.getDevices())}
       />
 
       <AlertsDrawer

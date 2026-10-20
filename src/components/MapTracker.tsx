@@ -269,23 +269,23 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
       {/* Map Container */}
       <div ref={mapContainerRef} className="w-full h-full z-0 bg-slate-950" />
 
-      {/* Floating Map Controls - Top Left */}
-      <div className="absolute top-4 left-4 z-[400] flex flex-col gap-2">
+      {/* Floating Map Controls - Top Right (Protrack style) */}
+      <div className="absolute top-3 right-3 z-[400] flex flex-col gap-1.5">
         {/* Layer Selector */}
         <div className="relative">
           <button
             onClick={() => setShowLayerMenu(!showLayerMenu)}
             title="تغییر لایه نقشه"
-            className="flex items-center gap-2 px-3 py-2 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl shadow-lg backdrop-blur-md transition-all text-xs font-medium cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl shadow-lg backdrop-blur-md transition-all text-[11px] font-medium cursor-pointer"
           >
-            <Layers className="w-4 h-4 text-cyan-400" />
+            <Layers className="w-3.5 h-3.5 text-cyan-400" />
             <span>{TILE_LAYERS[activeTile].name.split(' ')[0]}</span>
           </button>
 
           {showLayerMenu && (
-            <div className="absolute top-11 left-0 w-56 bg-slate-900/95 border border-slate-700/80 rounded-2xl p-2 shadow-2xl backdrop-blur-lg flex flex-col gap-1 z-50 animate-in fade-in zoom-in-95">
-              <div className="text-[10px] text-slate-400 font-semibold px-2 py-1 border-b border-slate-800 mb-1">
-                انتخاب استایل و نوع نقشه
+            <div className="absolute top-10 right-0 w-52 bg-slate-900/95 border border-slate-700/80 rounded-2xl p-1.5 shadow-2xl backdrop-blur-lg flex flex-col gap-1 z-50 animate-in fade-in zoom-in-95">
+              <div className="text-[10px] text-slate-400 font-semibold px-2 py-1 border-b border-slate-800 mb-0.5">
+                انتخاب لایه نقشه
               </div>
               {(Object.keys(TILE_LAYERS) as MapTileProvider[]).map((key) => {
                 const layer = TILE_LAYERS[key];
@@ -297,14 +297,14 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
                       setActiveTile(key);
                       setShowLayerMenu(false);
                     }}
-                    className={`flex items-center justify-between px-2.5 py-2 rounded-xl text-xs text-right transition-colors cursor-pointer ${
+                    className={`flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] text-right transition-colors cursor-pointer ${
                       isActive
                         ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
                         : 'text-slate-300 hover:bg-slate-800/80'
                     }`}
                   >
                     <span>{layer.name}</span>
-                    {isActive && <div className="w-2 h-2 rounded-full bg-cyan-400"></div>}
+                    {isActive && <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>}
                   </button>
                 );
               })}
@@ -316,28 +316,10 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
         <button
           onClick={fitAllDevices}
           title="مشاهده تمام خودروها روی نقشه"
-          className="flex items-center justify-center p-2.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl shadow-lg backdrop-blur-md transition-all cursor-pointer"
+          className="flex items-center justify-center p-2 bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl shadow-lg backdrop-blur-md transition-all cursor-pointer"
         >
           <Compass className="w-4 h-4 text-amber-400" />
         </button>
-      </div>
-
-      {/* Floating Status Bar - Bottom Left Overlay */}
-      <div className="absolute bottom-4 left-4 z-[400] hidden sm:flex items-center gap-3 px-3 py-1.5 bg-slate-900/85 backdrop-blur-md border border-slate-800 rounded-xl text-xs text-slate-300 shadow-xl">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>در حال حرکت: {devices.filter((d) => d.status === 'moving' && !d.engineCutOff).length}</span>
-        </div>
-        <div className="w-px h-3 bg-slate-700"></div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-          <span>متوقف: {devices.filter((d) => d.status === 'stopped' && !d.engineCutOff).length}</span>
-        </div>
-        <div className="w-px h-3 bg-slate-700"></div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-          <span>رله قطع کن: {devices.filter((d) => d.engineCutOff).length}</span>
-        </div>
       </div>
     </div>
   );
