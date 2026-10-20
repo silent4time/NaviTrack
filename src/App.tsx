@@ -17,6 +17,10 @@ import { AdminLicenseGeneratorModal } from './components/AdminLicenseGeneratorMo
 import { HistoryPlaybackModal } from './components/HistoryPlaybackModal';
 import { AlertsDrawer } from './components/AlertsDrawer';
 import { TelemetryDrawer } from './components/TelemetryDrawer';
+import { HardwareConnectorModal } from './components/HardwareConnectorModal';
+import { WordPressPluginGuideModal } from './components/WordPressPluginGuideModal';
+import { GeofenceManagerModal } from './components/GeofenceManagerModal';
+import { ReportsModal } from './components/ReportsModal';
 import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
 
 export default function App() {
@@ -37,6 +41,10 @@ export default function App() {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [isPlaybackOpen, setIsPlaybackOpen] = useState(false);
+  const [isHardwareOpen, setIsHardwareOpen] = useState(false);
+  const [isWordPressOpen, setIsWordPressOpen] = useState(false);
+  const [isGeofencesOpen, setIsGeofencesOpen] = useState(false);
+  const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [playbackDevice, setPlaybackDevice] = useState<Device | null>(null);
   const [activatePreselectedDevice, setActivatePreselectedDevice] = useState<Device | null>(null);
 
@@ -181,6 +189,34 @@ export default function App() {
     setAlerts(StorageService.getAlerts());
   };
 
+  const handleHardwarePacketInjected = (imei: string, lat: number, lng: number, speed: number) => {
+    setDevices((currentDevices) => {
+      const idx = currentDevices.findIndex((d) => d.imei === imei);
+      if (idx === -1) return currentDevices;
+      const dev = currentDevices[idx];
+      const updatedDev: Device = {
+        ...dev,
+        status: speed > 0 ? 'moving' : 'stopped',
+        historyTrail: [...dev.historyTrail, [lat, lng]],
+        telemetry: {
+          ...dev.telemetry,
+          latitude: lat,
+          longitude: lng,
+          speed,
+          lastUpdate: new Date().toISOString(),
+        },
+      };
+      const updated = [...currentDevices];
+      updated[idx] = updatedDev;
+      StorageService.saveDevices(updated);
+      if (selectedDevice?.id === dev.id) {
+        setSelectedDevice(updatedDev);
+      }
+      return updated;
+    });
+    showToast(`موقعیت سخت‌افزار IMEI [${imei}] با پکت دریافتی به‌روز شد.`);
+  };
+
   const unreadAlertsCount = alerts.filter((a) => !a.read).length;
 
   return (
@@ -192,6 +228,10 @@ export default function App() {
         onOpenActivateLicenseModal={() => handleOpenActivateLicense()}
         onOpenAdminModal={() => setIsAdminOpen(true)}
         onOpenAlertsDrawer={() => setIsAlertsOpen(true)}
+        onOpenHardwareModal={() => setIsHardwareOpen(true)}
+        onOpenWordPressModal={() => setIsWordPressOpen(true)}
+        onOpenGeofencesModal={() => setIsGeofencesOpen(true)}
+        onOpenReportsModal={() => setIsReportsOpen(true)}
         isSimulating={isSimulating}
         onToggleSimulation={() => setIsSimulating(!isSimulating)}
         onResetDemo={handleResetDemo}
@@ -343,6 +383,32 @@ export default function App() {
             setIsAlertsOpen(false);
           }
         }}
+      />
+
+      <HardwareConnectorModal
+        isOpen={isHardwareOpen}
+        onClose={() => setIsHardwareOpen(false)}
+        devices={devices}
+        onHardwarePacketInjected={handleHardwarePacketInjected}
+      />
+
+      <WordPressPluginGuideModal
+        isOpen={isWordPressOpen}
+        onClose={() => setIsWordPressOpen(false)}
+      />
+
+      <GeofenceManagerModal
+        isOpen={isGeofencesOpen}
+        onClose={() => setIsGeofencesOpen(false)}
+        geofences={geofences}
+        devices={devices}
+        onGeofencesUpdated={() => setGeofences(StorageService.getGeofences())}
+      />
+
+      <ReportsModal
+        isOpen={isReportsOpen}
+        onClose={() => setIsReportsOpen(false)}
+        devices={devices}
       />
     </div>
   );

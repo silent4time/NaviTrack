@@ -13,6 +13,8 @@ import {
   Sliders,
   CheckCircle2,
   Menu,
+  Cpu,
+  Globe,
 } from 'lucide-react';
 import { AlertNotification } from '../types/tracker';
 
@@ -22,6 +24,10 @@ interface NavbarProps {
   onOpenActivateLicenseModal: () => void;
   onOpenAdminModal: () => void;
   onOpenAlertsDrawer: () => void;
+  onOpenHardwareModal: () => void;
+  onOpenWordPressModal: () => void;
+  onOpenGeofencesModal: () => void;
+  onOpenReportsModal: () => void;
   isSimulating: boolean;
   onToggleSimulation: () => void;
   onResetDemo: () => void;
@@ -39,6 +45,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenActivateLicenseModal,
   onOpenAdminModal,
   onOpenAlertsDrawer,
+  onOpenHardwareModal,
+  onOpenWordPressModal,
+  onOpenGeofencesModal,
+  onOpenReportsModal,
   isSimulating,
   onToggleSimulation,
   onResetDemo,
@@ -89,21 +99,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 سامانه ردیابی آنلاین ناویار
               </h1>
               <span className="hidden sm:inline-block text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full font-mono font-bold">
-                PRO v2.5
+                FLEET v2.5
               </span>
             </div>
             <p className="text-[11px] text-slate-400 hidden sm:block">
-              پلتفرم ابری پایش ناوگان، ثبت سخت‌افزار با IMEI و فروش لایسنس
+              پنل پایش موقعیت سخت‌افزار، تله‌متری و وب‌سرویس ووکامرس
             </p>
           </div>
         </div>
       </div>
 
-      {/* Middle: Live Clock & Simulation Controls */}
+      {/* Middle: Live Clock & Navigation Shortcuts */}
       <div className="hidden lg:flex items-center gap-2 bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-2xl text-xs">
         <div className="flex items-center gap-1.5 text-slate-300">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          <span className="text-[11px] text-slate-400">زمان سرور:</span>
+          <span className="text-[11px] text-slate-400">زمان زنده:</span>
           <span className="font-mono font-bold text-cyan-400 dir-ltr">{timeStr}</span>
         </div>
 
@@ -134,18 +144,46 @@ export const Navbar: React.FC<NavbarProps> = ({
           ردپا
         </button>
         <button
-          onClick={onToggleGeofences}
+          onClick={onOpenGeofencesModal}
           className={`px-2 py-1 rounded-xl text-[11px] transition-colors cursor-pointer ${
             showGeofences ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-white'
           }`}
-          title="نمایش حصار جغرافیایی"
+          title="مدیریت حصارهای جغرافیایی"
         >
-          حصار
+          حصارها
+        </button>
+
+        <button
+          onClick={onOpenReportsModal}
+          className="px-2 py-1 rounded-xl text-[11px] text-slate-400 hover:text-cyan-300 transition-colors cursor-pointer"
+          title="گزارشات و آمار ناوگان"
+        >
+          گزارشات
         </button>
       </div>
 
       {/* Right Action Buttons */}
       <div className="flex items-center gap-2">
+        {/* Hardware Connector Modal Button */}
+        <button
+          onClick={onOpenHardwareModal}
+          className="flex items-center gap-1.5 py-2 px-2.5 bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-500/30 font-bold rounded-xl text-xs cursor-pointer transition-all shadow-sm"
+          title="تنظیمات و پورت اتصال سخت‌افزار ردیاب"
+        >
+          <Cpu className="w-4 h-4 text-cyan-400" />
+          <span className="hidden sm:inline">اتصال سخت‌افزار</span>
+        </button>
+
+        {/* WordPress Plugin Button */}
+        <button
+          onClick={onOpenWordPressModal}
+          className="flex items-center gap-1.5 py-2 px-2.5 bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 border border-amber-500/30 font-bold rounded-xl text-xs cursor-pointer transition-all shadow-sm"
+          title="افزونه ووکامرس / وردپرس"
+        >
+          <Globe className="w-4 h-4 text-amber-400" />
+          <span className="hidden sm:inline">افزونه وردپرس</span>
+        </button>
+
         {/* Alerts Bell */}
         <button
           onClick={onOpenAlertsDrawer}
@@ -158,33 +196,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               {unreadAlertsCount}
             </span>
           )}
-        </button>
-
-        {/* Store Button */}
-        <button
-          onClick={onOpenStoreModal}
-          className="hidden sm:flex items-center gap-1.5 py-2 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shadow-lg shadow-amber-500/20 cursor-pointer transition-all"
-        >
-          <KeyRound className="w-4 h-4" />
-          <span>خرید لایسنس</span>
-        </button>
-
-        {/* Activate Button */}
-        <button
-          onClick={onOpenActivateLicenseModal}
-          className="hidden md:flex items-center gap-1.5 py-2 px-3 bg-slate-800 hover:bg-slate-750 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-          <span>فعال‌سازی کد</span>
-        </button>
-
-        {/* Admin Generator Button */}
-        <button
-          onClick={onOpenAdminModal}
-          className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-indigo-400 border border-indigo-500/30 hover:text-indigo-300 transition-colors cursor-pointer"
-          title="پنل تولید و مدیریت لایسنس‌ها (مخصوص مدیر / نماینده)"
-        >
-          <Shield className="w-4 h-4" />
         </button>
       </div>
     </header>
