@@ -469,13 +469,35 @@ export const DistributorPanel: React.FC<DistributorPanelProps> = ({
                             </span>
                           </td>
                           <td className="p-3 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              {/* Assign Button */}
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
                               <button
                                 onClick={() => setAssignDeviceImei(dev.imei)}
-                                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg text-[11px] font-semibold cursor-pointer"
+                                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded text-[10px] font-medium"
                               >
-                                {isAssigned ? 'تغییر مشتری' : 'واگذاری به مشتری'}
+                                {isAssigned ? 'تغییر مشتری' : 'واگذاری'}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const months = 12;
+                                  const base = Math.max(Date.now(), new Date(dev.license.expiresAt).getTime());
+                                  const newExpiry = new Date(base + months * 30 * 86400000).toISOString();
+                                  const updated = {
+                                    ...dev,
+                                    license: {
+                                      ...dev.license,
+                                      status: 'active' as const,
+                                      isExpired: false,
+                                      expiresAt: newExpiry,
+                                      activatedAt: new Date().toISOString(),
+                                      planName: 'تمدید ۱۲ ماهه (ادمین)',
+                                    },
+                                  };
+                                  StorageService.updateDevice(updated);
+                                  onDevicesUpdated();
+                                }}
+                                className="px-2 py-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-[10px] font-medium"
+                              >
+                                تمدید لایسنس
                               </button>
                             </div>
                           </td>
