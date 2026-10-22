@@ -71,7 +71,55 @@ export default function App() {
     return () => clearInterval(interval);
   }, [isSimulating]);
 
-  // Auth Handlers
+  
+  // Live position updates from GT06 / hardware packets
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/devices/positions');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success || !data.positions?.length) return;
+
+        setDevices((current) => {
+          let changed = false;
+          const updated = current.map((dev) => {
+            const pos = data.positions.find((p: any) => p.imei === dev.imei);
+            if (!pos) return dev;
+            const lat = Number(pos.latitude);
+            const lng = Number(pos.longitude);
+            if (Math.abs(lat - dev.telemetry.latitude) < 0.00001 && Math.abs(lng - dev.telemetry.longitude) < 0.00001) {
+              return dev;
+            }
+            changed = true;
+            return {
+              ...dev,
+              status: pos.speed > 1 ? 'moving' : 'stopped',
+              telemetry: {
+                ...dev.telemetry,
+                latitude: lat,
+                longitude: lng,
+                speed: Number(pos.speed) || 0,
+                heading: Number(pos.heading) || dev.telemetry.heading,
+                lastUpdate: pos.timestamp || new Date().toISOString(),
+              },
+              historyTrail: [...dev.historyTrail.slice(-50), [lat, lng]],
+            };
+          });
+          if (changed) StorageService.saveDevices(updated);
+          return changed ? updated : current;
+        });
+      } catch {
+        // ignore network errors
+      }
+    };
+
+    const id = setInterval(poll, 4000);
+    poll();
+    return () => clearInterval(id);
+  }, []);
+
+// Auth Handlers
   const handleLoginSuccess = (newSession: AuthSession) => {
     setSession(newSession);
     setImpersonatedUser(null);

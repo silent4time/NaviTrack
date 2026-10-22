@@ -126,6 +126,25 @@ async function startServer() {
       count: logs.length,
       logs,
     });
+
+  // Latest positions derived from received packets (for live map updates)
+  app.get('/api/devices/positions', (req, res) => {
+    const latest: Record<string, any> = {};
+    for (const pkt of packetLogs) {
+      if (pkt.imei && pkt.imei !== 'unknown' && pkt.decoded?.latitude && !latest[pkt.imei]) {
+        latest[pkt.imei] = {
+          imei: pkt.imei,
+          latitude: pkt.decoded.latitude,
+          longitude: pkt.decoded.longitude,
+          speed: pkt.decoded.speed || 0,
+          heading: pkt.decoded.heading || 0,
+          timestamp: pkt.timestamp,
+        };
+      }
+    }
+    res.json({ success: true, positions: Object.values(latest) });
+  });
+
   });
 
   // --- 3. Hardware Remote Commands (Immobilizer, Settings) ---
