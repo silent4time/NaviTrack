@@ -315,40 +315,21 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
       };
 
       const customHtml = `
-        <div class="relative flex items-center justify-center cursor-pointer group" style="direction: ltr;">
-          <!-- Selection ring -->
-          ${
-            isSelected
-              ? `<div class="absolute -inset-2.5 rounded-full border-2 border-cyan-400 animate-pulse bg-cyan-400/20"></div>`
-              : ''
-          }
-          
-          <!-- Outer pin frame with heading rotation -->
-          <div style="transform: rotate(${heading}deg); transition: transform 0.4s ease-out;" class="relative w-11 h-11 rounded-2xl ${statusBg} text-white shadow-xl flex items-center justify-center border-2 border-slate-900 shadow-slate-950/80">
-            ${pingPulse}
-            <!-- Vehicle icon -->
-            <div class="relative z-10 text-white">
-              ${getIconSvg()}
+        <div class="relative flex flex-col items-center cursor-pointer" style="direction: ltr;">
+          <!-- Direction arrow + status circle -->
+          <div class="relative" style="transform: rotate(${heading}deg); transition: transform 0.3s ease;">
+            <div class="w-8 h-8 rounded-full ${statusBg} border-2 border-white shadow-lg flex items-center justify-center">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" class="text-white">
+                <path d="M12 2L8 10h8L12 2z"/>
+              </svg>
             </div>
-            <!-- Arrow tip pointing in heading direction -->
-            <div class="absolute -top-1.5 w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[6px] border-b-white"></div>
+            ${isSelected ? '<div class="absolute -inset-1 rounded-full border-2 border-cyan-400 animate-pulse"></div>' : ''}
           </div>
-
-          <!-- Speed Badge -->
-          <div class="absolute -bottom-2 bg-slate-900/95 backdrop-blur-md text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-slate-700/80 shadow-md whitespace-nowrap">
-            ${
-              speed > 0
-                ? `${speed} <span class="text-[8px] font-normal text-slate-400">km/h</span>`
-                : isEngineCut
-                ? 'رله خاموش'
-                : 'توقف'
-            }
+          <!-- Label -->
+          <div class="mt-1 px-1.5 py-0.5 bg-slate-900/90 text-white text-[10px] font-medium rounded shadow whitespace-nowrap border border-slate-700">
+            ${device.name.split(' ')[0]}
           </div>
-
-          <!-- Floating Name Label on Hover or Selected -->
-          <div class="absolute -top-7 px-2 py-0.5 rounded bg-slate-900/90 text-[11px] font-medium text-slate-200 border border-slate-700 shadow whitespace-nowrap opacity-90 transition-opacity">
-            ${device.name}
-          </div>
+          ${device.status === 'moving' && !device.engineCutOff ? `<div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border border-white text-[8px] flex items-center justify-center text-white font-bold">${telemetry.speed}</div>` : ''}
         </div>
       `;
 
