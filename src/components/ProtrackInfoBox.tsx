@@ -5,16 +5,16 @@ import {
   Navigation,
   Play,
   PowerOff,
-  Radio,
-  KeyRound,
+  Power,
   Signal,
   Battery,
   MapPin,
   Clock,
   Gauge,
-  Sliders,
   ShieldAlert,
   Compass,
+  Key,
+  Radio,
 } from 'lucide-react';
 
 interface ProtrackInfoBoxProps {
@@ -45,153 +45,145 @@ export const ProtrackInfoBox: React.FC<ProtrackInfoBoxProps> = ({
     onToggleEngineCut(device);
   };
 
+  const statusColor = device.engineCutOff
+    ? 'bg-red-500'
+    : device.status === 'moving'
+    ? 'bg-emerald-500'
+    : device.status === 'stopped'
+    ? 'bg-amber-400'
+    : 'bg-slate-500';
+
+  const statusText = device.engineCutOff
+    ? 'قطع سوخت فعال'
+    : device.status === 'moving'
+    ? `متحرک • ${telemetry.speed} km/h`
+    : device.status === 'stopped'
+    ? 'متوقف'
+    : 'آفلاین';
+
   return (
-    <div className="absolute top-4 left-4 z-[400] w-80 md:w-96 bg-slate-900/95 backdrop-blur-md border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden text-xs text-slate-200 select-none animate-in fade-in slide-in-from-top-2">
-      {/* Protrack-style Top Bar */}
-      <div className="bg-slate-950 px-3.5 py-2.5 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            className={`w-2.5 h-2.5 rounded-full ${
-              device.engineCutOff
-                ? 'bg-red-500'
-                : device.status === 'moving'
-                ? 'bg-emerald-500 animate-pulse'
-                : 'bg-amber-500'
-            }`}
-          />
-          <span className="font-bold text-white text-sm truncate max-w-[170px]">{device.name}</span>
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
-            {device.plateNumber}
-          </span>
+    <div className="absolute top-4 left-4 z-[400] w-[340px] bg-[#0f172a]/95 backdrop-blur-md border border-slate-700/70 rounded-xl shadow-2xl overflow-hidden text-xs text-slate-200 select-none">
+      {/* Header */}
+      <div className="px-3 py-2.5 bg-[#0c1322] border-b border-slate-700/60 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${statusColor} ${device.status === 'moving' && !device.engineCutOff ? 'animate-pulse' : ''}`} />
+          <div className="min-w-0">
+            <div className="font-semibold text-white text-sm truncate">{device.name}</div>
+            <div className="text-[10px] text-slate-400 font-mono truncate">{device.plateNumber}</div>
+          </div>
         </div>
-        <button
-          onClick={onClose}
-          className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-850 cursor-pointer"
-        >
+        <button onClick={onClose} className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white">
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Main Info Body */}
-      <div className="p-3.5 space-y-2.5">
-        {/* Status banner */}
-        <div className="flex items-center justify-between bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 text-[11px]">
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">وضعیت:</span>
-            {device.engineCutOff ? (
-              <span className="text-red-400 font-bold">رله قطع سوخت فعال</span>
-            ) : device.status === 'moving' ? (
-              <span className="text-emerald-400 font-bold flex items-center gap-1">
-                در حال حرکت ({telemetry.speed} km/h)
-              </span>
-            ) : (
-              <span className="text-amber-400 font-bold">متوقف (پارک)</span>
-            )}
-          </div>
-          <span className="text-slate-500 font-mono text-[10px]">
-            {new Date(telemetry.lastUpdate).toLocaleTimeString('fa-IR')}
-          </span>
+      {/* Status Strip */}
+      <div className="px-3 py-2 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Navigation className="w-3.5 h-3.5 text-cyan-400" style={{ transform: `rotate(${telemetry.heading}deg)` }} />
+          <span className="font-medium text-white">{statusText}</span>
         </div>
+        <span className="text-[10px] text-slate-500 font-mono">
+          {new Date(telemetry.lastUpdate).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+      </div>
 
-        {/* Telemetry Grid */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 bg-slate-950/40 p-2.5 rounded-xl border border-slate-800/50 text-[11px]">
-          <div className="flex justify-between items-center">
-            <span className="text-slate-400">سرعت لحظه‌ای:</span>
-            <span className="font-mono font-bold text-cyan-300">{telemetry.speed} km/h</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-slate-400">سوئیچ (ACC):</span>
-            <span className={telemetry.ignition ? 'text-emerald-400 font-bold' : 'text-slate-500'}>
-              {telemetry.ignition ? 'روشن (ON)' : 'خاموش (OFF)'}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-slate-400">مسافت کل:</span>
-            <span className="font-mono text-slate-200">{Math.round(telemetry.odometer)} km</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-slate-400">ولتاژ باتری:</span>
-            <span className="font-mono text-amber-300">{telemetry.batteryVoltage} V</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-slate-400">سیگنال GSM:</span>
-            <span className="font-mono text-slate-300">{telemetry.gsmSignalPercent}% (4G)</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-slate-400">ماهواره GPS:</span>
-            <span className="font-mono text-cyan-400">{telemetry.satellites} SAT</span>
-          </div>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-3 gap-px bg-slate-800/50 border-b border-slate-800">
+        <div className="bg-[#0f172a] px-2 py-2 text-center">
+          <Gauge className="w-3.5 h-3.5 mx-auto text-cyan-400 mb-0.5" />
+          <div className="font-mono font-bold text-white">{telemetry.speed}</div>
+          <div className="text-[9px] text-slate-500">km/h</div>
         </div>
-
-        {/* Coords & Hardware IMEI */}
-        <div className="flex items-center justify-between text-[10px] text-slate-400 px-1 font-mono">
-          <span>IMEI: {device.imei}</span>
-          <span dir="ltr">
-            {telemetry.latitude.toFixed(5)}, {telemetry.longitude.toFixed(5)}
-          </span>
+        <div className="bg-[#0f172a] px-2 py-2 text-center">
+          <Battery className="w-3.5 h-3.5 mx-auto text-amber-400 mb-0.5" />
+          <div className="font-mono font-bold text-white">{telemetry.batteryVoltage}</div>
+          <div className="text-[9px] text-slate-500">Volt</div>
         </div>
-
-        {/* Engine Cutoff confirmation modal inline */}
-        {showConfirmCut ? (
-          <div className="p-2.5 bg-red-950/60 border border-red-500/50 rounded-xl space-y-1.5 text-[11px]">
-            <span className="font-bold text-red-300 flex items-center gap-1">
-              <ShieldAlert className="w-3.5 h-3.5" />
-              {device.engineCutOff ? 'وصل مجدد سوخت و اجازه استارت؟' : 'قطع سوخت خودرو (خاموش‌کن رله)؟'}
-            </span>
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                onClick={() => setShowConfirmCut(false)}
-                className="flex-1 py-1 bg-slate-800 text-slate-300 rounded-lg cursor-pointer"
-              >
-                انصراف
-              </button>
-              <button
-                onClick={handleConfirmCut}
-                className="flex-1 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg cursor-pointer"
-              >
-                تأیید فرمان
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Protrack Action Button Row */}
-        <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-slate-800">
-          {/* History Playback */}
-          <button
-            onClick={() => onOpenPlayback(device)}
-            className="flex items-center justify-center gap-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-750 text-cyan-300 rounded-xl font-medium cursor-pointer transition-colors"
-            title="بازپخش مسیر تردد"
-          >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>بازپخش</span>
-          </button>
-
-          {/* Remote Cutoff */}
-          <button
-            onClick={() => setShowConfirmCut(true)}
-            className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl font-medium cursor-pointer transition-colors ${
-              device.engineCutOff
-                ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40'
-                : 'bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600/30'
-            }`}
-            title="فرمان رله قطع سوخت"
-          >
-            <PowerOff className="w-3.5 h-3.5" />
-            <span>{device.engineCutOff ? 'وصل سوخت' : 'قطع سوخت'}</span>
-          </button>
-
-          {/* Config / Hardware */}
-          <button
-            onClick={onOpenHardwareConfig}
-            className="flex items-center justify-center gap-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-xl font-medium cursor-pointer transition-colors"
-            title="تنظیمات پورت و سرور ردیاب"
-          >
-            <Radio className="w-3.5 h-3.5 text-amber-400" />
-            <span>سخت‌افزار</span>
-          </button>
+        <div className="bg-[#0f172a] px-2 py-2 text-center">
+          <Signal className="w-3.5 h-3.5 mx-auto text-emerald-400 mb-0.5" />
+          <div className="font-mono font-bold text-white">{telemetry.gsmSignalPercent}%</div>
+          <div className="text-[9px] text-slate-500">GSM</div>
         </div>
       </div>
+
+      {/* Details */}
+      <div className="px-3 py-2.5 space-y-1.5 border-b border-slate-800/60">
+        <div className="flex justify-between items-center">
+          <span className="text-slate-400 flex items-center gap-1"><Key className="w-3 h-3" /> سوئیچ ACC</span>
+          <span className={telemetry.ignition ? 'text-emerald-400 font-medium' : 'text-slate-500'}>
+            {telemetry.ignition ? 'روشن' : 'خاموش'}
+          </span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-slate-400 flex items-center gap-1"><Compass className="w-3 h-3" /> ماهواره</span>
+          <span className="font-mono text-cyan-300">{telemetry.satellites} SAT</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-slate-400 flex items-center gap-1"><MapPin className="w-3 h-3" /> مختصات</span>
+          <span className="font-mono text-slate-300" dir="ltr">{telemetry.latitude.toFixed(5)}, {telemetry.longitude.toFixed(5)}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-slate-400">IMEI</span>
+          <span className="font-mono text-slate-300">{device.imei}</span>
+        </div>
+      </div>
+
+      {/* License Status */}
+      <div className="px-3 py-2 bg-slate-900/50 border-b border-slate-800/40 flex items-center justify-between text-[11px]">
+        <span className="text-slate-400">لایسنس:</span>
+        <span className={
+          license.status === 'active' ? 'text-emerald-400' :
+          license.status === 'expiring_soon' ? 'text-amber-400' : 'text-red-400'
+        }>
+          {license.planName} • {license.status === 'expired' ? 'منقضی' : 'فعال'}
+        </span>
+      </div>
+
+      {/* Actions */}
+      {!showConfirmCut ? (
+        <div className="p-2.5 grid grid-cols-2 gap-2">
+          <button
+            onClick={() => onOpenPlayback(device)}
+            className="flex items-center justify-center gap-1.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-medium transition-colors"
+          >
+            <Play className="w-3.5 h-3.5" />
+            بازپخش مسیر
+          </button>
+          <button
+            onClick={() => setShowConfirmCut(true)}
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-colors ${
+              device.engineCutOff
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                : 'bg-red-600 hover:bg-red-500 text-white'
+            }`}
+          >
+            {device.engineCutOff ? <Power className="w-3.5 h-3.5" /> : <PowerOff className="w-3.5 h-3.5" />}
+            {device.engineCutOff ? 'وصل سوخت' : 'قطع سوخت'}
+          </button>
+        </div>
+      ) : (
+        <div className="p-2.5 bg-red-950/40 border-t border-red-900/50">
+          <div className="text-[11px] text-red-300 mb-2 flex items-center gap-1">
+            <ShieldAlert className="w-3.5 h-3.5" />
+            {device.engineCutOff ? 'وصل مجدد سوخت؟' : 'قطع سوخت و خاموش کردن موتور؟'}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowConfirmCut(false)}
+              className="flex-1 py-1.5 bg-slate-800 text-slate-300 rounded text-xs"
+            >
+              انصراف
+            </button>
+            <button
+              onClick={handleConfirmCut}
+              className="flex-1 py-1.5 bg-red-600 hover:bg-red-500 text-white font-medium rounded text-xs"
+            >
+              تأیید
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
