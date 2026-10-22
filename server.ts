@@ -218,3 +218,94 @@ async function startServer() {
 }
 
 startServer();
+
+// --- GT06 / Concox Protocol TCP Listener (basic) ---
+// Most Protrack-compatible cheap trackers use this protocol.
+// Default port 5023 (common for GT06). Configure device via SMS:
+// SERVER,1,YOUR_IP_OR_DOMAIN,5023,0#
+import net from 'net';
+
+const GT06_PORT = Number(process.env.GT06_PORT) || 5023;
+
+const gt06Server = net.createServer((socket) => {
+  const remote = `${socket.remoteAddress}:${socket.remotePort}`;
+  console.log(`[GT06] Device connected from ${remote}`);
+
+  let buffer = Buffer.alloc(0);
+
+  socket.on('data', (data) => {
+    buffer = Buffer.concat([buffer, data]);
+
+    // Simple packet detection: look for 0x78 0x78 ... 0x0D 0x0A
+    while (buffer.length >= 10) {
+      const start = buffer.indexOf(Buffer.from([0x78, 0x78]));
+      if (start === -1) {
+        buffer = Buffer.alloc(0);
+        break;
+      }
+      if (start > 0) buffer = buffer.slice(start);
+
+      const len = buffer[2];
+      const totalLen = len + 5; // start(2) + len(1) + data(len) + stop(2)
+      if (buffer.length < totalLen) break;
+
+      const packet = buffer.slice(0, totalLen);
+      buffer = buffer.slice(totalLen);
+
+      if (packet[packet.length - 2] !== 0x0d || packet[packet.length - 1] !== 0x0a) continue;
+
+      const protocol = packet[3];
+      const hex = packet.toString('hex').toUpperCase();
+
+      let imei = 'unknown';
+      let decoded: Record<string, any> = { protocol: `0x${protocol.toString(16)}` };
+
+      if (protocol === 0x01 && packet.length >= 12) {
+        // Login packet - extract IMEI (usually 8 bytes after protocol)
+        imei = packet.slice(4, 12).toString('hex');
+        decoded.imei = imei;
+        console.log(`[GT06] Login from IMEI ${imei}`);
+      } else if ((protocol === 0x12 || protocol === 0x22) && packet.length > 20) {
+        // Location packet - rough parse (simplified)
+        try {
+          const latRaw = packet.readUInt32BE(11);
+          const lngRaw = packet.readUInt32BE(15);
+          const lat = latRaw / 1800000;
+          const lng = lngRaw / 1800000;
+          const speed = packet[19];
+          decoded = { ...decoded, latitude: lat, longitude: lng, speed, type: 'location' };
+          console.log(`[GT06] Location: ${lat.toFixed(5)}, ${lng.toFixed(5)} speed=${speed}`);
+        } catch (e) {
+          decoded.parseError = true;
+        }
+      }
+
+      const logEntry: HardwarePacketLog = {
+        id: `gt06_${Date.now()}`,
+        imei,
+        protocol: 'GT06',
+        rawPayload: hex,
+        decoded,
+        ip: remote,
+        timestamp: new Date().toISOString(),
+      };
+      packetLogs.unshift(logEntry);
+      if (packetLogs.length > 100) packetLogs.pop();
+
+      // Simple ACK for login and status (0x01, 0x13)
+      if (protocol === 0x01 || protocol === 0x13) {
+        const ack = Buffer.from([0x78, 0x78, 0x05, protocol, 0x00, 0x01, 0x00, 0x00, 0x0d, 0x0a]);
+        socket.write(ack);
+      }
+    }
+  });
+
+  socket.on('end', () => console.log(`[GT06] Device disconnected: ${remote}`));
+  socket.on('error', (err) => console.log(`[GT06] Socket error: ${err.message}`));
+});
+
+gt06Server.listen(GT06_PORT, '0.0.0.0', () => {
+  console.log(`[NaviTrack] GT06 TCP server listening on port ${GT06_PORT}`);
+  console.log(`  Configure trackers with SMS: SERVER,1,YOUR_PUBLIC_IP,${GT06_PORT},0#`);
+});
+
