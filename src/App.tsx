@@ -8,7 +8,6 @@ import { Device, AlertNotification, Geofence } from './types/tracker';
 import { AuthSession, UserAccount } from './types/auth';
 import { Language } from './services/i18n';
 import { StorageService } from './services/storage';
-import { stepSimulation } from './services/simulator';
 import { LoginPage } from './components/LoginPage';
 import { DistributorPanel } from './components/DistributorPanel';
 import { UserMonitorPanel } from './components/UserMonitorPanel';
@@ -19,17 +18,13 @@ import { CheckCircle2, AlertTriangle } from 'lucide-react';
 export default function App() {
   const [language, setLanguage] = useState<Language>('fa');
   const [session, setSession] = useState<AuthSession | null>(() => {
-    const existing = StorageService.getCurrentSession();
-    if (existing) return existing;
-    const defaultAuth = StorageService.authenticateByAccount('dealer', '123456');
-    return defaultAuth.session || null;
+    return StorageService.getCurrentSession();
   });
   const [impersonatedUser, setImpersonatedUser] = useState<UserAccount | null>(null);
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [geofences, setGeofences] = useState<Geofence[]>([]);
   const [alerts, setAlerts] = useState<AlertNotification[]>([]);
-  const [isSimulating, setIsSimulating] = useState(true);
 
   // Modals accessible from distributor or user
   const [isHardwareOpen, setIsHardwareOpen] = useState(false);
@@ -50,28 +45,6 @@ export default function App() {
     setAlerts(StorageService.getAlerts());
   }, []);
 
-  // Simulation Loop
-  useEffect(() => {
-    if (!isSimulating) return;
-
-    const interval = setInterval(() => {
-      setDevices((currentDevices) => {
-        const updated = stepSimulation(currentDevices, (newAlert) => {
-          setAlerts((prevAlerts) => {
-            const nextAlerts = [newAlert, ...prevAlerts];
-            StorageService.saveAlerts(nextAlerts);
-            return nextAlerts;
-          });
-        });
-        StorageService.saveDevices(updated);
-        return updated;
-      });
-    }, 1800);
-
-    return () => clearInterval(interval);
-  }, [isSimulating]);
-
-  
   // Live position updates from GT06 / hardware packets
   useEffect(() => {
     const poll = async () => {
@@ -94,7 +67,7 @@ export default function App() {
             changed = true;
             return {
               ...dev,
-              status: pos.speed > 1 ? 'moving' : 'stopped',
+              status: (pos.speed > 1 ? 'moving' : 'stopped') as Device['status'],
               telemetry: {
                 ...dev.telemetry,
                 latitude: lat,
@@ -256,8 +229,6 @@ export default function App() {
           isDistributorImpersonating={Boolean(isDistributor && impersonatedUser)}
           language={language}
           onLanguageChange={setLanguage}
-          isSimulating={isSimulating}
-          onToggleSimulation={() => setIsSimulating(!isSimulating)}
           alerts={alerts}
           geofences={geofences}
           onMarkAllAlertsRead={() => {

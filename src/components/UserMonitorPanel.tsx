@@ -33,8 +33,6 @@ interface UserMonitorPanelProps {
   isDistributorImpersonating?: boolean;
   language: Language;
   onLanguageChange: (lang: Language) => void;
-  isSimulating: boolean;
-  onToggleSimulation: () => void;
   alerts: AlertNotification[];
   geofences: Geofence[];
   onMarkAllAlertsRead: () => void;
@@ -49,8 +47,6 @@ export const UserMonitorPanel: React.FC<UserMonitorPanelProps> = ({
   isDistributorImpersonating,
   language,
   onLanguageChange,
-  isSimulating,
-  onToggleSimulation,
   alerts,
   geofences,
   onMarkAllAlertsRead,
@@ -127,20 +123,6 @@ export const UserMonitorPanel: React.FC<UserMonitorPanelProps> = ({
               <PanelRightClose className="w-3.5 h-3.5" />
             )}
             <span>{isSidebarCollapsed ? 'نمایش منوی راست (خودروها)' : 'مخفی‌سازی منو'}</span>
-          </button>
-
-          {/* Live GPS Simulation toggle */}
-          <button
-            onClick={onToggleSimulation}
-            title={isSimulating ? 'توقف حرکت' : 'ادامه حرکت'}
-            className={`flex items-center gap-1 px-2 py-1 rounded-lg border font-medium cursor-pointer ${
-              isSimulating
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-            }`}
-          >
-            {isSimulating ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 fill-current" />}
-            <span className="text-[10px] hidden sm:inline">{isSimulating ? 'زنده' : 'متوقف'}</span>
           </button>
 
           {/* Alerts Bell */}

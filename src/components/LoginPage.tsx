@@ -56,16 +56,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }
   };
 
-  const handleQuickDemoClient = () => {
-    const result = StorageService.authenticateByAccount('user', '123456');
-    if (result.session) onLoginSuccess(result.session);
-  };
-
-  const handleQuickDemoDistributor = () => {
-    const result = StorageService.authenticateByAccount('dealer', '123456');
-    if (result.session) onLoginSuccess(result.session);
-  };
-
   return (
     <div
       className="min-h-screen w-screen bg-slate-950 flex flex-col justify-between select-none relative overflow-hidden font-['Vazirmatn',sans-serif]"
@@ -235,41 +225,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               <ArrowRight className="w-4 h-4 rtl:rotate-180" />
             </button>
           </form>
-
-          {/* Quick Demo Login Triggers for Instant Testing */}
-          <div className="pt-3 border-t border-slate-800 space-y-2">
-            <span className="block text-[11px] text-slate-400 text-center font-medium">
-              دسترسی سریع و مشاهده آنی نقشه:
-            </span>
-            <button
-              type="button"
-              onClick={handleQuickDemoDistributor}
-              className="w-full py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
-            >
-              <Navigation className="w-4 h-4 -rotate-45" />
-              <span>مشاهده مستقیم نقشه زنده مانیتورینگ (دمو کامل)</span>
-            </button>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
-              <button
-                type="button"
-                onClick={handleQuickDemoClient}
-                className="py-2 px-3 bg-slate-800 hover:bg-slate-750 text-cyan-300 border border-cyan-500/30 rounded-xl font-bold cursor-pointer transition-colors flex items-center justify-center gap-1.5"
-              >
-                <User className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{t.demoClientBtn}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleQuickDemoDistributor}
-                className="py-2 px-3 bg-slate-800 hover:bg-slate-750 text-amber-300 border border-amber-500/30 rounded-xl font-bold cursor-pointer transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Shield className="w-3.5 h-3.5 text-amber-400" />
-                <span>{t.demoDealerBtn}</span>
-              </button>
-            </div>
-          </div>
         </div>
       </main>
 

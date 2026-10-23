@@ -138,297 +138,14 @@ export interface StoredLicenseRecord {
 }
 
 // Initial demo licenses for testing & demonstration
-const INITIAL_LICENSES: StoredLicenseRecord[] = [
-  {
-    key: 'NVTRK-8K9M-27XP-WQ4D',
-    planId: 'plan_12m',
-    planName: 'اشتراک ۱۲ ماهه (طلایی)',
-    durationMonths: 12,
-    createdAt: new Date().toISOString(),
-    isUsed: false,
-    notes: 'لایسنس هدیه تست سالانه - آماده فعال‌سازی',
-  },
-  {
-    key: 'NVTRK-7B4W-99RE-M33A',
-    planId: 'plan_6m',
-    planName: 'اشتراک ۶ ماهه (پیشرفته)',
-    durationMonths: 6,
-    createdAt: new Date().toISOString(),
-    isUsed: false,
-    notes: 'لایسنس آماده تحویل',
-  },
-  {
-    key: 'NVTRK-5L2C-88PQ-19HJ',
-    planId: 'plan_3m',
-    planName: 'اشتراک ۳ ماهه (اقتصادی)',
-    durationMonths: 3,
-    createdAt: new Date().toISOString(),
-    isUsed: false,
-    notes: 'کد اختصاصی پیش‌فرض',
-  },
-];
+const INITIAL_LICENSES: StoredLicenseRecord[] = [];
 
 // Initial demo devices in Tehran routes
-const INITIAL_DEVICES: Device[] = [
-  {
-    id: 'dev_1',
-    imei: '862908041539201',
-    name: 'پژو ۲۰۷i دنده‌ای سفید',
-    plateNumber: '۲۱ ج ۴۵۶ ایران ۳۳',
-    model: 'Teltonika FMB920',
-    assetType: 'car',
-    simNumber: '09123456789',
-    ownerName: 'محمدرضا اسدی',
-    status: 'moving',
-    engineCutOff: false,
-    telemetry: {
-      latitude: 35.7485,
-      longitude: 51.3789, // Hemmat Hwy
-      speed: 78,
-      heading: 85,
-      altitude: 1280,
-      satellites: 15,
-      accuracy: 2.1,
-      ignition: true,
-      batteryVoltage: 13.8,
-      backupBatteryPercent: 96,
-      gsmSignalPercent: 92,
-      odometer: 48210,
-      engineTemp: 88,
-      fuelLevelPercent: 74,
-      lastUpdate: new Date().toISOString(),
-    },
-    license: {
-      licenseKey: 'NVTRK-A93K-1234-9988',
-      planName: 'اشتراک ۱۲ ماهه طلایی',
-      planDurationMonths: 12,
-      activatedAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-      expiresAt: new Date(Date.now() + 335 * 86400000).toISOString(),
-      isExpired: false,
-      status: 'active',
-      features: {
-        smsAlerts: true,
-        geofenceLimit: 10,
-        historyDays: 365,
-        remoteImmobilizer: true,
-      },
-    },
-    historyTrail: [
-      [35.7410, 51.3400],
-      [35.7435, 51.3550],
-      [35.7460, 51.3680],
-      [35.7485, 51.3789],
-    ],
-    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
-  },
-  {
-    id: 'dev_2',
-    imei: '358249091823704',
-    name: 'کامیون ایسوزو ۶ تن باری',
-    plateNumber: '۵۸ ع ۲۳۱ ایران ۷۷',
-    model: 'Concox GT06N',
-    assetType: 'truck',
-    simNumber: '09359876543',
-    ownerName: 'باربری پیشگامان البرز (راننده: حسینی)',
-    status: 'moving',
-    engineCutOff: false,
-    telemetry: {
-      latitude: 35.7010,
-      longitude: 51.3340, // Karaj Special Road
-      speed: 62,
-      heading: 260,
-      altitude: 1210,
-      satellites: 13,
-      accuracy: 3.4,
-      ignition: true,
-      batteryVoltage: 24.6, // 24V truck system
-      backupBatteryPercent: 100,
-      gsmSignalPercent: 88,
-      odometer: 184520,
-      engineTemp: 84,
-      fuelLevelPercent: 55,
-      lastUpdate: new Date().toISOString(),
-    },
-    license: {
-      licenseKey: 'NVTRK-TRUK-6677-B12A',
-      planName: 'اشتراک ۶ ماهه پیشرفته',
-      planDurationMonths: 6,
-      activatedAt: new Date(Date.now() - 140 * 86400000).toISOString(),
-      expiresAt: new Date(Date.now() + 40 * 86400000).toISOString(),
-      isExpired: false,
-      status: 'active',
-      features: {
-        smsAlerts: true,
-        geofenceLimit: 5,
-        historyDays: 180,
-        remoteImmobilizer: true,
-      },
-    },
-    historyTrail: [
-      [35.6980, 51.3600],
-      [35.6995, 51.3480],
-      [35.7010, 51.3340],
-    ],
-    createdAt: new Date(Date.now() - 150 * 86400000).toISOString(),
-  },
-  {
-    id: 'dev_3',
-    imei: '867493038491206',
-    name: 'موتورسیکلت هوندا کلیک ۱۵۰',
-    plateNumber: '۸۴۹ / ۴۵۶۸۱',
-    model: 'SinoTrack ST-901',
-    assetType: 'motorcycle',
-    simNumber: '09197778899',
-    ownerName: 'پیک سپید تهران (علیرضا)',
-    status: 'stopped',
-    engineCutOff: false,
-    telemetry: {
-      latitude: 35.7192,
-      longitude: 51.4080, // Valiasr St / Fatemi
-      speed: 0,
-      heading: 180,
-      altitude: 1295,
-      satellites: 11,
-      accuracy: 4.0,
-      ignition: false,
-      batteryVoltage: 12.3,
-      backupBatteryPercent: 88,
-      gsmSignalPercent: 95,
-      odometer: 14200,
-      engineTemp: 45,
-      fuelLevelPercent: 80,
-      lastUpdate: new Date(Date.now() - 12 * 60000).toISOString(),
-    },
-    license: {
-      licenseKey: 'NVTRK-MOTO-4411-90PQ',
-      planName: 'اشتراک ۳ ماهه اقتصادی',
-      planDurationMonths: 3,
-      activatedAt: new Date(Date.now() - 85 * 86400000).toISOString(),
-      expiresAt: new Date(Date.now() + 5 * 86400000).toISOString(), // expiring soon
-      isExpired: false,
-      status: 'expiring_soon',
-      features: {
-        smsAlerts: false,
-        geofenceLimit: 3,
-        historyDays: 90,
-        remoteImmobilizer: true,
-      },
-    },
-    historyTrail: [
-      [35.7280, 51.4100],
-      [35.7220, 51.4090],
-      [35.7192, 51.4080],
-    ],
-    createdAt: new Date(Date.now() - 90 * 86400000).toISOString(),
-  },
-  {
-    id: 'dev_4',
-    imei: '861937049827365',
-    name: 'تویوتا هایلوکس دو دیفرانسیل',
-    plateNumber: '۶۶ ط ۸۱۴ ایران ۱۱',
-    model: 'Coban TK303G',
-    assetType: 'van',
-    simNumber: '09101112233',
-    ownerName: 'مهندس کاوه رضایی',
-    status: 'offline',
-    engineCutOff: true, // immobilizer active
-    telemetry: {
-      latitude: 35.8050,
-      longitude: 51.4310, // Tajrish / Niavaran
-      speed: 0,
-      heading: 0,
-      altitude: 1540,
-      satellites: 0,
-      accuracy: 0,
-      ignition: false,
-      batteryVoltage: 12.1,
-      backupBatteryPercent: 70,
-      gsmSignalPercent: 0,
-      odometer: 98110,
-      engineTemp: 22,
-      fuelLevelPercent: 90,
-      lastUpdate: new Date(Date.now() - 48 * 3600000).toISOString(),
-    },
-    license: {
-      licenseKey: 'NVTRK-EXPD-0000-FAIL',
-      planName: 'اشتراک منقضی شده',
-      planDurationMonths: 1,
-      activatedAt: new Date(Date.now() - 65 * 86400000).toISOString(),
-      expiresAt: new Date(Date.now() - 35 * 86400000).toISOString(),
-      isExpired: true,
-      status: 'expired',
-      features: {
-        smsAlerts: false,
-        geofenceLimit: 1,
-        historyDays: 30,
-        remoteImmobilizer: true,
-      },
-    },
-    historyTrail: [
-      [35.8050, 51.4310]
-    ],
-    createdAt: new Date(Date.now() - 70 * 86400000).toISOString(),
-  },
-];
+const INITIAL_DEVICES: Device[] = [];
 
-const INITIAL_GEOFENCES: Geofence[] = [
-  {
-    id: 'geo_1',
-    name: 'محدوده طرح ترافیک مرکزی تهران',
-    lat: 35.7000,
-    lng: 51.4100,
-    radiusMeters: 3500,
-    assignedDeviceImeis: ['862908041539201', '358249091823704'],
-    alertOnEnter: true,
-    alertOnExit: true,
-  },
-  {
-    id: 'geo_2',
-    name: 'پارکینگ مرکزی انبار غرب',
-    lat: 35.7010,
-    lng: 51.3340,
-    radiusMeters: 800,
-    assignedDeviceImeis: ['358249091823704'],
-    alertOnEnter: false,
-    alertOnExit: true,
-  },
-];
+const INITIAL_GEOFENCES: Geofence[] = [];
 
-const INITIAL_ALERTS: AlertNotification[] = [
-  {
-    id: 'alt_1',
-    deviceId: 'dev_1',
-    imei: '862908041539201',
-    deviceName: 'پژو ۲۰۷i دنده‌ای سفید',
-    type: 'overspeed',
-    message: 'سرعت غیرمجاز: سرعت ۷۸ کیلومتر بر ساعت در محدوده حداکثر مجاز',
-    timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
-    read: false,
-    severity: 'medium',
-  },
-  {
-    id: 'alt_2',
-    deviceId: 'dev_4',
-    imei: '861937049827365',
-    deviceName: 'تویوتا هایلوکس دو دیفرانسیل',
-    type: 'engine_cut',
-    message: 'فرمان قطع کن موتور صادر شد - سوخت‌رسانی متوقف است (رله فعال)',
-    timestamp: new Date(Date.now() - 120 * 60000).toISOString(),
-    read: true,
-    severity: 'high',
-  },
-  {
-    id: 'alt_3',
-    deviceId: 'dev_3',
-    imei: '867493038491206',
-    deviceName: 'موتورسیکلت هوندا کلیک ۱۵۰',
-    type: 'vibration',
-    message: 'هشدار سنسور شوک و تکان خوردن شدید در حالت پارک خاموش',
-    timestamp: new Date(Date.now() - 360 * 60000).toISOString(),
-    read: true,
-    severity: 'medium',
-  },
-];
+const INITIAL_ALERTS: AlertNotification[] = [];
 
 // Storage API
 export const StorageService = {
@@ -678,29 +395,8 @@ export const StorageService = {
           role: 'distributor',
           phone: '09121111111',
           companyName: 'بازرگانی ردیاب پارس',
-          assignedImeis: ['862908041539201', '358249091823704', '867493038491206', '861937049827365'],
+          assignedImeis: [],
           createdAt: new Date(Date.now() - 180 * 86400000).toISOString(),
-        },
-        {
-          id: 'user_1',
-          username: 'user',
-          email: 'user@demo.com',
-          name: 'محمدرضا اسدی (مشتری)',
-          role: 'user',
-          phone: '09123456789',
-          assignedImeis: ['862908041539201', '867493038491206'], // Peugeot 207 & Honda Click
-          createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
-        },
-        {
-          id: 'user_2',
-          username: 'fleet',
-          email: 'fleet@demo.com',
-          name: 'باربری پیشگامان البرز (مشتری سازمانی)',
-          role: 'user',
-          phone: '09359876543',
-          companyName: 'پیشگامان البرز',
-          assignedImeis: ['358249091823704'], // Isuzu Truck
-          createdAt: new Date(Date.now() - 90 * 86400000).toISOString(),
         },
       ];
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(initialUsers));
@@ -827,3 +523,22 @@ export const StorageService = {
     this.getUsers(); // reseed users
   },
 };
+
+// One-time cleanup of demo data saved in the browser by earlier versions
+(function purgeDemoDataOnce() {
+  try {
+    const FLAG = 'navitrack_demo_purged_v1';
+    if (localStorage.getItem(FLAG)) return;
+    [
+      STORAGE_KEYS.DEVICES,
+      STORAGE_KEYS.LICENSES,
+      STORAGE_KEYS.GEOFENCES,
+      STORAGE_KEYS.ALERTS,
+      STORAGE_KEYS.USERS,
+      STORAGE_KEYS.SESSION,
+    ].forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem(FLAG, '1');
+  } catch {
+    // storage unavailable
+  }
+})();

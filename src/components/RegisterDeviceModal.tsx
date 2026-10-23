@@ -120,27 +120,6 @@ export const RegisterDeviceModal: React.FC<RegisterDeviceModalProps> = ({
     onClose();
   };
 
-  // Quick filler for testing
-  const handleFillDemo = () => {
-    // Generate valid 15-digit Luhn IMEI
-    const demoImeis = [
-      '862908041539201',
-      '358249091823704',
-      '867493038491206',
-      '861937049827365',
-      '864392049182740',
-    ];
-    const pickedImei = demoImeis[Math.floor(Math.random() * demoImeis.length)];
-    setImei(pickedImei);
-    setName('تارا اتوماتیک نقره‌ای');
-    setPlateNumber('۴۴ ب ۷۸۲ ایران ۲۱');
-    setModel('Teltonika FMB920 (اروپا)');
-    setAssetType('car');
-    setSimNumber('09129876543');
-    setOwnerName('امیرحسین کریمی');
-    setErrorMsg('');
-  };
-
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
       <div className="w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
@@ -171,17 +150,6 @@ export const RegisterDeviceModal: React.FC<RegisterDeviceModalProps> = ({
               <span>{errorMsg}</span>
             </div>
           )}
-
-          {/* Quick Demo Fill */}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleFillDemo}
-              className="text-xs text-cyan-400 hover:underline cursor-pointer flex items-center gap-1"
-            >
-              <span>+ پرکردن خودکار با مشخصات نمونه</span>
-            </button>
-          </div>
 
           {/* IMEI Field */}
           <div>
