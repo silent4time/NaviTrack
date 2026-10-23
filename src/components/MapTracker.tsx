@@ -329,7 +329,7 @@ export const MapTracker: React.FC<MapTrackerProps> = ({
           <div class="mt-1 px-1.5 py-0.5 bg-slate-900/90 text-white text-[10px] font-medium rounded shadow whitespace-nowrap border border-slate-700">
             ${device.name.split(' ')[0]}
           </div>
-          ${device.status === 'moving' && !device.engineCutOff ? `<div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border border-white text-[8px] flex items-center justify-center text-white font-bold">${telemetry.speed}</div>` : ''}
+          ${device.status === 'moving' && !device.engineCutOff ? `<div class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border border-white text-[8px] flex items-center justify-center text-white font-bold">${speed}</div>` : ''}
         </div>
       `;
 
