@@ -624,7 +624,7 @@ export const StorageService = {
 
   saveGeofences(geofences: Geofence[]): void {
     localStorage.setItem(STORAGE_KEYS.GEOFENCES, JSON.stringify(geofences));
-  }
+  },
 
   addGeofence(geo: Geofence): void {
     const list = this.getGeofences();
@@ -636,7 +636,6 @@ export const StorageService = {
     const list = this.getGeofences().filter((g) => g.id !== id);
     this.saveGeofences(list);
   },
-,
 
   getAlerts(): AlertNotification[] {
     const raw = localStorage.getItem(STORAGE_KEYS.ALERTS);
